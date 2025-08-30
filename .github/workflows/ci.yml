@@ -11,21 +11,28 @@ env:
 
 jobs:
   test:
-    name: Xcode Tests
+    name: Tests
     runs-on: macos-15
 
     strategy:
       matrix:
-        platform: [macos, ios, tvos, watchos]
         include:
-          - platform: macos
-            destination: "platform=macOS"
-          - platform: ios
-            destination: "platform=iOS Simulator,name=iPhone 15,OS=latest"
-          - platform: tvos
-            destination: "platform=tvOS Simulator,name=Apple TV,OS=latest"
-          - platform: watchos
-            destination: "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm),OS=latest"
+          - name: "macOS"
+            platform: "macos"
+            sdk: "macosx"
+            target: "x86_64-apple-macos14.0"
+          - name: "iOS"
+            platform: "ios"
+            sdk: "iphonesimulator"
+            target: "x86_64-apple-ios16.0-simulator"
+          - name: "tvOS"
+            platform: "tvos"
+            sdk: "appletvsimulator"
+            target: "x86_64-apple-tvos14.0-simulator"
+          - name: "watchOS"
+            platform: "watchos"
+            sdk: "watchsimulator"
+            target: "x86_64-apple-watchos7.0-simulator"
 
     steps:
       - name: Checkout code
@@ -48,34 +55,54 @@ jobs:
 
       - name: Build and test
         run: |
-          case ${{ matrix.platform }} in
-            macos)
-              # macOS: Use swift build/test directly
-              swift build --skip-plugins
-              swift test --skip-plugins
-              ;;
-            ios)
-              # iOS: Use swift with iOS simulator target
-              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios16.0-simulator
-              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios16.0-simulator
-              ;;
-            tvos)
-              # tvOS: Use swift with tvOS simulator target
-              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
-              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
-              ;;
-            watchos)
-              # watchOS: Use swift with watchOS simulator target
-              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
-              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
-              ;;
-          esac
+          swift build --skip-plugins \
+            -Xswiftc -sdk -Xswiftc $(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path) \
+            -Xswiftc -target -Xswiftc ${{ matrix.target }}
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
+          swift test --skip-plugins \
+            -Xswiftc -sdk -Xswiftc $(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path) \
+            -Xswiftc -target -Xswiftc ${{ matrix.target }}
+
+  lint:
+    name: SwiftLint
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
         with:
-          name: test-results-${{ matrix.platform }}
-          path: |
-            ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
-            .build/test-results/
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install SwiftLint
+        run: |
+          brew install swiftlint
+
+      - name: Run SwiftLint
+        run: |
+          swiftlint lint --reporter github-actions-logging
+
+  documentation:
+    name: Documentation
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Generate documentation
+        run: |
+          swift package generate-documentation --target Network
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: .build/plugins/Swift-DocC/outputs/Network.doccarchive
