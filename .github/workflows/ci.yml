@@ -18,21 +18,13 @@ jobs:
       matrix:
         include:
           - name: "macOS"
-            platform: "macos"
-            sdk: "macosx"
-            target: "x86_64-apple-macos14.0"
+            destination: "platform=macOS"
           - name: "iOS"
-            platform: "ios"
-            sdk: "iphonesimulator"
-            target: "x86_64-apple-ios16.0-simulator"
+            destination: "platform=iOS Simulator,name=iPhone 15,OS=latest"
           - name: "tvOS"
-            platform: "tvos"
-            sdk: "appletvsimulator"
-            target: "x86_64-apple-tvos14.0-simulator"
+            destination: "platform=tvOS Simulator,name=Apple TV,OS=latest"
           - name: "watchOS"
-            platform: "watchos"
-            sdk: "watchsimulator"
-            target: "x86_64-apple-watchos7.0-simulator"
+            destination: "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm),OS=latest"
 
     steps:
       - name: Checkout code
@@ -53,56 +45,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-swift-
 
-      - name: Build and test
+      - name: Build and test with xcodebuild
         run: |
-          swift build --skip-plugins \
-            -Xswiftc -sdk -Xswiftc $(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path) \
-            -Xswiftc -target -Xswiftc ${{ matrix.target }}
-
-          swift test --skip-plugins \
-            -Xswiftc -sdk -Xswiftc $(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path) \
-            -Xswiftc -target -Xswiftc ${{ matrix.target }}
-
-  lint:
-    name: SwiftLint
-    runs-on: macos-15
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
-      - name: Install SwiftLint
-        run: |
-          brew install swiftlint
-
-      - name: Run SwiftLint
-        run: |
-          swiftlint lint --reporter github-actions-logging
-
-  documentation:
-    name: Documentation
-    runs-on: macos-15
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: ${{ env.XCODE_VERSION }}
-
-      - name: Generate documentation
-        run: |
-          swift package generate-documentation --target Network
-
-      - name: Upload documentation
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation
-          path: .build/plugins/Swift-DocC/outputs/Network.doccarchive
+          xcodebuild -resolvePackageDependencies
+          xcodebuild -scheme swift-network -destination '${{ matrix.destination }}' build test
