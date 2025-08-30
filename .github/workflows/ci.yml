@@ -46,23 +46,28 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-swift-
 
-      - name: Build and test with xcodebuild
+      - name: Build and test
         run: |
-          # Open Swift Package in Xcode and build/test
-          xcodebuild -resolvePackageDependencies
-
           case ${{ matrix.platform }} in
             macos)
-              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
+              # macOS: Use swift build/test directly
+              swift build --skip-plugins
+              swift test --skip-plugins
               ;;
             ios)
-              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
+              # iOS: Use swift with iOS simulator target
+              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios16.0-simulator
+              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios16.0-simulator
               ;;
             tvos)
-              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
+              # tvOS: Use swift with tvOS simulator target
+              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
+              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
               ;;
             watchos)
-              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
+              # watchOS: Use swift with watchOS simulator target
+              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
+              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
               ;;
           esac
 
