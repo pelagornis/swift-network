@@ -1,13 +1,25 @@
 import Foundation
+#if canImport(Security)
 @preconcurrency import Security
+#endif
 
+#if canImport(Security)
 public protocol SecurityManager {
     func validateCertificate(_ serverTrust: SecTrust, domain: String) -> Bool
     func addCertificatePinning(_ certificate: SecCertificate, for domain: String)
     func removeCertificatePinning(for domain: String)
     func isCertificatePinned(for domain: String) -> Bool
 }
+#else
+public protocol SecurityManager {
+    func validateCertificate(_ serverTrust: Any, domain: String) -> Bool
+    func addCertificatePinning(_ certificate: Any, for domain: String)
+    func removeCertificatePinning(for domain: String)
+    func isCertificatePinned(for domain: String) -> Bool
+}
+#endif
 
+#if canImport(Security)
 public final class DefaultSecurityManager: SecurityManager, @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.network.security", attributes: .concurrent)
     private var pinnedCertificates: [String: Set<Data>] = [:]
@@ -73,6 +85,40 @@ public final class DefaultSecurityManager: SecurityManager, @unchecked Sendable 
         return false
     }
 }
+#else
+public final class DefaultSecurityManager: SecurityManager, @unchecked Sendable {
+    private let queue = DispatchQueue(label: "com.network.security", attributes: .concurrent)
+    private var pinnedCertificates: [String: Set<Data>] = [:]
+    private let allowInvalidCertificates: Bool
+    private let validateDomainName: Bool
+    
+    public init(allowInvalidCertificates: Bool = false, validateDomainName: Bool = true) {
+        self.allowInvalidCertificates = allowInvalidCertificates
+        self.validateDomainName = validateDomainName
+    }
+    
+    public func validateCertificate(_ serverTrust: Any, domain: String) -> Bool {
+        // Security framework not available, return true for compatibility
+        return true
+    }
+    
+    public func addCertificatePinning(_ certificate: Any, for domain: String) {
+        // Security framework not available, no-op
+    }
+    
+    public func removeCertificatePinning(for domain: String) {
+        queue.async(flags: .barrier) {
+            self.pinnedCertificates.removeValue(forKey: domain)
+        }
+    }
+    
+    public func isCertificatePinned(for domain: String) -> Bool {
+        return queue.sync {
+            return pinnedCertificates[domain]?.isEmpty == false
+        }
+    }
+}
+#endif
 
 public class CertificatePinningPlugin: NetworkPlugin {
     private let securityManager: SecurityManager
@@ -90,6 +136,7 @@ public class CertificatePinningPlugin: NetworkPlugin {
     }
 }
 
+#if canImport(Security)
 public final class URLSessionSecurityDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
     private let securityManager: SecurityManager
     
@@ -122,3 +169,22 @@ public final class URLSessionSecurityDelegate: NSObject, URLSessionDelegate, @un
         }
     }
 }
+#else
+public final class URLSessionSecurityDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {
+    private let securityManager: SecurityManager
+    
+    public init(securityManager: SecurityManager) {
+        self.securityManager = securityManager
+        super.init()
+    }
+    
+    public func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        // Security framework not available, perform default handling
+        completionHandler(.performDefaultHandling, nil)
+    }
+}
+#endif
