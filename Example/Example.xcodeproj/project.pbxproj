@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		DCC91CB82E635E86003C374E /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = DCC91CB72E635E86003C374E /* Network */; };
-		DCC91CD72E6361AF003C374E /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = DCC91CD62E6361AF003C374E /* Network */; };
+		DC0A15F72E636F7100D8A5F2 /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A15F62E636F7100D8A5F2 /* Network */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,18 +27,25 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DCC91CB82E635E86003C374E /* Network in Frameworks */,
-				DCC91CD72E6361AF003C374E /* Network in Frameworks */,
+				DC0A15F72E636F7100D8A5F2 /* Network in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		DC0A15F52E636F7100D8A5F2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		DCC91C9C2E635DE6003C374E = {
 			isa = PBXGroup;
 			children = (
 				DCC91CA72E635DE6003C374E /* Example */,
+				DC0A15F52E636F7100D8A5F2 /* Frameworks */,
 				DCC91CA62E635DE6003C374E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -72,8 +78,7 @@
 			);
 			name = Example;
 			packageProductDependencies = (
-				DCC91CB72E635E86003C374E /* Network */,
-				DCC91CD62E6361AF003C374E /* Network */,
+				DC0A15F62E636F7100D8A5F2 /* Network */,
 			);
 			productName = Example;
 			productReference = DCC91CA52E635DE6003C374E /* Example.app */;
@@ -104,7 +109,6 @@
 			mainGroup = DCC91C9C2E635DE6003C374E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				DCC91CD52E6361AF003C374E /* XCLocalSwiftPackageReference "../../swift-network" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DCC91CA62E635DE6003C374E /* Products */;
@@ -337,19 +341,8 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		DCC91CD52E6361AF003C374E /* XCLocalSwiftPackageReference "../../swift-network" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../swift-network";
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		DCC91CB72E635E86003C374E /* Network */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Network;
-		};
-		DCC91CD62E6361AF003C374E /* Network */ = {
+		DC0A15F62E636F7100D8A5F2 /* Network */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Network;
 		};
