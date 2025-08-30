@@ -50,18 +50,18 @@ jobs:
           case ${{ matrix.name }} in
             "macOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test
+              swift test --skip-plugins
               ;;
             "iOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test
+              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios16.0-simulator
               ;;
             "tvOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test
+              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
               ;;
             "watchOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test
+              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
               ;;
           esac
