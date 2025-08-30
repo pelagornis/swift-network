@@ -50,18 +50,18 @@ jobs:
           case ${{ matrix.name }} in
             "macOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              swift test
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
               ;;
             "iOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              swift test -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios16.0-simulator
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
               ;;
             "tvOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              swift test -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
               ;;
             "watchOS")
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              swift test -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
               ;;
           esac
