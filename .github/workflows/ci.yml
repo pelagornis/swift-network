@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  SWIFT_VERSION: "6.0"
+
+jobs:
+  test:
+    name: Swift Tests
+    runs-on: macos-15
+
+    strategy:
+      matrix:
+        platform: [macos, ios, tvos, watchos]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2.3.0
+        with:
+          swift-version: "6.0.0"
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/org.swift.swiftpm
+            .build
+          key: ${{ runner.os }}-swift-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-
+
+      - name: Build and test
+        run: |
+          case ${{ matrix.platform }} in
+            macos)
+              swift build
+              swift test
+              ;;
+            ios)
+              swift build -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios14.0-simulator
+              swift test -Xswiftc -sdk -Xswiftc $(xcrun --sdk iphonesimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-ios14.0-simulator
+              ;;
+            tvos)
+              swift build -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
+              swift test -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
+              ;;
+            watchos)
+              swift build -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
+              swift test -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
+              ;;
+          esac
