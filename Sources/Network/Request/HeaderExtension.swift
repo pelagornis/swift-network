@@ -13,6 +13,10 @@ public extension Http.Header {
         .init(field: "Authorization", value: "Bearer \(token)")
     }
     
+    static func userAgent(_ agent: String) -> Self {
+        .init(field: "User-Agent", value: agent)
+    }
+    
     static var json: Self {
         .contentType("application/json")
     }

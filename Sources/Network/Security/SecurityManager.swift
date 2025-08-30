@@ -70,17 +70,74 @@ public final class DefaultSecurityManager: SecurityManager, @unchecked Sendable 
     private func validatePinnedCertificate(_ serverTrust: SecTrust, for domain: String) -> Bool {
         let pinnedCerts = queue.sync { pinnedCertificates[domain] ?? [] }
         
-        guard let certificateChain = SecTrustCopyCertificateChain(serverTrust) as? [SecCertificate] else {
-            return false
+        #if os(iOS) && compiler(>=5.5)
+        if #available(iOS 15.0, *) {
+            guard let certificateChain = SecTrustCopyCertificateChain(serverTrust) as? [SecCertificate] else {
+                return false
+            }
+            
+            for certificate in certificateChain {
+                let certificateData = SecCertificateCopyData(certificate) as Data
+                
+                if pinnedCerts.contains(certificateData) {
+                    return true
+                }
+            }
+        } else {
+            // Fallback for iOS < 15.0
+            let certificateCount = SecTrustGetCertificateCount(serverTrust)
+            for i in 0..<certificateCount {
+                guard let certificate = SecTrustGetCertificateAtIndex(serverTrust, i) else {
+                    continue
+                }
+                let certificateData = SecCertificateCopyData(certificate) as Data
+                
+                if pinnedCerts.contains(certificateData) {
+                    return true
+                }
+            }
         }
-        
-        for certificate in certificateChain {
+        #elseif os(macOS) && compiler(>=5.5)
+        if #available(macOS 12.0, *) {
+            guard let certificateChain = SecTrustCopyCertificateChain(serverTrust) as? [SecCertificate] else {
+                return false
+            }
+            
+            for certificate in certificateChain {
+                let certificateData = SecCertificateCopyData(certificate) as Data
+                
+                if pinnedCerts.contains(certificateData) {
+                    return true
+                }
+            }
+        } else {
+            // Fallback for macOS < 12.0
+            let certificateCount = SecTrustGetCertificateCount(serverTrust)
+            for i in 0..<certificateCount {
+                guard let certificate = SecTrustGetCertificateAtIndex(serverTrust, i) else {
+                    continue
+                }
+                let certificateData = SecCertificateCopyData(certificate) as Data
+                
+                if pinnedCerts.contains(certificateData) {
+                    return true
+                }
+            }
+        }
+        #else
+        // Fallback for other platforms or older compilers
+        let certificateCount = SecTrustGetCertificateCount(serverTrust)
+        for i in 0..<certificateCount {
+            guard let certificate = SecTrustGetCertificateAtIndex(serverTrust, i) else {
+                continue
+            }
             let certificateData = SecCertificateCopyData(certificate) as Data
             
             if pinnedCerts.contains(certificateData) {
                 return true
             }
         }
+        #endif
         
         return false
     }
