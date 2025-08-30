@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DCC91CB82E635E86003C374E /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = DCC91CB72E635E86003C374E /* Network */; };
+		DCC91CD72E6361AF003C374E /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = DCC91CD62E6361AF003C374E /* Network */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		DCC91CA52E635DE6003C374E /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DCC91CB82E635E86003C374E /* Network in Frameworks */,
+				DCC91CD72E6361AF003C374E /* Network in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = Example;
 			packageProductDependencies = (
+				DCC91CB72E635E86003C374E /* Network */,
+				DCC91CD62E6361AF003C374E /* Network */,
 			);
 			productName = Example;
 			productReference = DCC91CA52E635DE6003C374E /* Example.app */;
@@ -94,6 +103,9 @@
 			);
 			mainGroup = DCC91C9C2E635DE6003C374E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DCC91CD52E6361AF003C374E /* XCLocalSwiftPackageReference "../../swift-network" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DCC91CA62E635DE6003C374E /* Products */;
 			projectDirPath = "";
@@ -324,6 +336,24 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		DCC91CD52E6361AF003C374E /* XCLocalSwiftPackageReference "../../swift-network" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../swift-network";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DCC91CB72E635E86003C374E /* Network */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Network;
+		};
+		DCC91CD62E6361AF003C374E /* Network */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Network;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DCC91C9D2E635DE6003C374E /* Project object */;
 }
