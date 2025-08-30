@@ -79,7 +79,7 @@ jobs:
                 git checkout -f "$tag"
               fi
 
-              # Use Swift Docc Plugin
+              # Use Swift DocC directly (built into Swift 6.0)
               swift package \
                 --allow-writing-to-directory docs-out/"$tag" \
                 generate-documentation \
