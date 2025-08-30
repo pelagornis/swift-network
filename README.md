@@ -1,5 +1,12 @@
 # Swift Network
 
+[![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
+[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20macOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20watchOS-lightgrey.svg)](https://developer.apple.com)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/your-username/swift-network/workflows/Test/badge.svg)](https://github.com/your-username/swift-network/actions)
+[![Code Coverage](https://codecov.io/gh/your-username/swift-network/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/swift-network)
+[![Documentation](https://img.shields.io/badge/Documentation-DocC-blue.svg)](https://your-username.github.io/swift-network)
+
 A modern, protocol-oriented Swift networking library with enterprise-grade features.
 
 ## Features
