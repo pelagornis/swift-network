@@ -7,49 +7,70 @@ on:
     branches: [main, develop]
 
 env:
-  SWIFT_VERSION: "6.0"
+  XCODE_VERSION: "16.4"
 
 jobs:
   test:
-    name: Swift Tests
+    name: Xcode Tests
     runs-on: macos-15
 
     strategy:
       matrix:
-        platform: [macos, tvos, watchos]
+        platform: [macos, ios, tvos, watchos]
+        include:
+          - platform: macos
+            destination: "platform=macOS"
+          - platform: ios
+            destination: "platform=iOS Simulator,name=iPhone 15,OS=latest"
+          - platform: tvos
+            destination: "platform=tvOS Simulator,name=Apple TV,OS=latest"
+          - platform: watchos
+            destination: "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm),OS=latest"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v2.3.0
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
         with:
-          swift-version: "6.0.0"
+          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Cache Swift packages
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/org.swift.swiftpm
+            ~/Library/Caches/org.swift.swiftpm
             .build
           key: ${{ runner.os }}-swift-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-swift-
 
-      - name: Build and test
+      - name: Build and test with xcodebuild
         run: |
+          # Open Swift Package in Xcode and build/test
+          xcodebuild -resolvePackageDependencies
+
           case ${{ matrix.platform }} in
             macos)
-              swift build --skip-plugins
-              swift test --skip-plugins
+              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
+              ;;
+            ios)
+              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
               ;;
             tvos)
-              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
-              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk appletvsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-tvos14.0-simulator
+              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
               ;;
             watchos)
-              swift build --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
-              swift test --skip-plugins -Xswiftc -sdk -Xswiftc $(xcrun --sdk watchsimulator --show-sdk-path) -Xswiftc -target -Xswiftc x86_64-apple-watchos7.0-simulator
+              xcodebuild -scheme Network -destination '${{ matrix.destination }}' build test
               ;;
           esac
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
+            .build/test-results/
