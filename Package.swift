@@ -21,16 +21,13 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0")
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.5")
     ],
     targets: [
         .target(
             name: "Network",
             resources: [
                 .process("Resources/PrivacyInfo.xcprivacy")
-            ],
-            linkerSettings: [
-                .linkedFramework("Security")
             ]
         ),
         .testTarget(
