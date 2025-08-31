@@ -5,63 +5,65 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
-env:
-  XCODE_VERSION: "16.4"
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    name: Tests
+  xcodebuild-latest:
+    name: xcodebuild (16.4)
     runs-on: macos-15
-
-    strategy:
-      matrix:
-        include:
-          - name: "macOS"
-            destination: "platform=macOS"
-          - name: "iOS"
-            destination: "platform=iOS Simulator,name=iPhone 15,OS=latest"
-          - name: "tvOS"
-            destination: "platform=tvOS Simulator,name=Apple TV,OS=latest"
-          - name: "watchOS"
-            destination: "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm),OS=latest"
-
+          strategy:
+        matrix:
+          command: [test, ""]
+          platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
+          xcode: ["16.4"]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v2.3.0
-        with:
-          swift-version: "6.0.0"
+      - name: Select Xcode ${{ matrix.xcode }}
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
 
-      - name: Cache Swift packages
-        uses: actions/cache@v4
+      - name: Update xcbeautify
+        run: brew update && brew upgrade xcbeautify
+
+      - name: List available devices
+        run: xcrun simctl list devices available
+
+      - name: Cache derived data
+        uses: actions/cache@v3
         with:
           path: |
-            ~/Library/Caches/org.swift.swiftpm
-            .build
-          key: ${{ runner.os }}-swift-${{ hashFiles('**/Package.resolved') }}
+            ~/.derivedData
+          key: |
+            deriveddata-xcodebuild-${{ matrix.platform }}-${{ matrix.xcode }}-${{ matrix.command }}-${{ hashFiles('**/Sources/**/*.swift', '**/Tests/**/*.swift') }}
           restore-keys: |
-            ${{ runner.os }}-swift-
+            deriveddata-xcodebuild-${{ matrix.platform }}-${{ matrix.xcode }}-${{ matrix.command }}-
 
-      - name: Build and test with xcodebuild
+      - name: Set IgnoreFileSystemDeviceInodeChanges flag
+        run: defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
+
+      - name: Update mtime for incremental builds
+        uses: chetan/git-restore-mtime-action@v2
+
+      - name: Debug
         run: |
-          case ${{ matrix.name }} in
-            "macOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
+          case ${{ matrix.platform }} in
+            "MACOS")
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=macOS' ${{ matrix.command }}
               ;;
-            "iOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
+            "IOS")
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' ${{ matrix.command }}
               ;;
-            "tvOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
+            "TVOS")
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=18.5' ${{ matrix.command }}
               ;;
-            "watchOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' build
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination '${{ matrix.destination }}' test -only-testing:NetworkTests
+            "WATCHOS")
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5' ${{ matrix.command }}
+              ;;
+            "VISIONOS")
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5' ${{ matrix.command }}
               ;;
           esac
