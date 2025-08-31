@@ -36,6 +36,13 @@ Or add it directly in Xcode:
 2. Enter the repository URL
 3. Select the version you want to use
 
+## Documentation
+
+The documentation for releases and ``main`` are available here:
+
+- [``main``](https://pelagornis.github.io/swift-network/main/documentation/network)
+
+
 ## Quick Start
 
 ### Basic Usage
