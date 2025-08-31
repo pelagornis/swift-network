@@ -1,10 +1,43 @@
 import Foundation
 
+/**
+ * Defines how request parameters should be encoded.
+ * 
+ * ParameterEncoding specifies the format in which request parameters
+ * should be encoded, supporting URL query parameters, JSON body, and
+ * form URL encoding.
+ * 
+ * ## Usage
+ * ```swift
+ * // URL encoding for query parameters
+ * let urlEncoding = ParameterEncoding.url
+ * 
+ * // JSON encoding for request body
+ * let jsonEncoding = ParameterEncoding.json
+ * 
+ * // Form URL encoding for request body
+ * let formEncoding = ParameterEncoding.formURLEncoded
+ * ```
+ */
 public enum ParameterEncoding: Sendable {
+    /// Encode parameters as URL query parameters
     case url
+    
+    /// Encode parameters as JSON in request body
     case json
+    
+    /// Encode parameters as form URL encoded in request body
     case formURLEncoded
 
+    /**
+     * Encodes parameters into the request using the specified encoding method.
+     * 
+     * - Parameters:
+     *   - request: The request to encode parameters into
+     *   - parameters: The parameters to encode
+     * - Returns: The request with encoded parameters
+     * - Throws: `NetworkError` if encoding fails
+     */
     func encode(request: URLRequest, parameters: [String: Any]) throws -> URLRequest {
         var request = request
         switch self {

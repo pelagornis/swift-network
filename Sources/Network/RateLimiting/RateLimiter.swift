@@ -1,6 +1,12 @@
 import Foundation
 
 // MARK: - Simple Endpoint for Sendable Closures
+/**
+ * A simple endpoint implementation for use with Sendable closures.
+ * 
+ * This internal struct provides a minimal Endpoint implementation
+ * that can be safely used across thread boundaries.
+ */
 private struct SimpleEndpoint: Endpoint, @unchecked Sendable {
     let baseURL: URL
     let path: String
@@ -10,17 +16,83 @@ private struct SimpleEndpoint: Endpoint, @unchecked Sendable {
     let timeout: TimeInterval? = nil
 }
 
+/**
+ * A protocol for implementing rate limiting functionality.
+ * 
+ * RateLimiter controls the frequency of network requests to prevent
+ * overwhelming servers and to comply with API rate limits. It provides
+ * methods to check if requests should be allowed and to record request
+ * activity.
+ * 
+ * ## Usage
+ * ```swift
+ * let rateLimiter = TokenBucketRateLimiter(
+ *     config: RateLimitConfig(
+ *         maxRequests: 100,
+ *         timeWindow: 60
+ *     )
+ * )
+ * 
+ * if rateLimiter.shouldAllowRequest(for: endpoint) {
+ *     // Make the request
+ *     rateLimiter.recordRequest(for: endpoint)
+ * } else {
+ *     // Handle rate limit exceeded
+ * }
+ * ```
+ */
 public protocol RateLimiter {
+    /**
+     * Determines if a request should be allowed based on current rate limits.
+     * 
+     * - Parameter endpoint: The endpoint for which to check rate limits
+     * - Returns: `true` if the request should be allowed, `false` if rate limited
+     */
     func shouldAllowRequest(for endpoint: Endpoint) -> Bool
+    
+    /**
+     * Records that a request was made for rate limiting purposes.
+     * 
+     * This method updates the rate limiter's internal state to track
+     * request frequency and maintain rate limits.
+     * 
+     * - Parameter endpoint: The endpoint for which the request was made
+     */
     func recordRequest(for endpoint: Endpoint)
+    
+    /**
+     * Resets the rate limiter's internal state.
+     * 
+     * This method clears all request history and resets the rate limiter
+     * to its initial state. Useful for testing or manual rate limit resets.
+     */
     func reset()
 }
 
+/**
+ * Configuration for rate limiting behavior.
+ * 
+ * RateLimitConfig defines the parameters that control how rate limiting
+ * operates, including request limits, time windows, and burst allowances.
+ */
 public struct RateLimitConfig {
+    /// Maximum number of requests allowed in the time window
     public let maxRequests: Int
+    
+    /// Time window in seconds for rate limiting
     public let timeWindow: TimeInterval
+    
+    /// Maximum burst size for token bucket algorithms
     public let burstSize: Int
     
+    /**
+     * Creates a new RateLimitConfig.
+     * 
+     * - Parameters:
+     *   - maxRequests: Maximum requests allowed in the time window
+     *   - timeWindow: Time window in seconds
+     *   - burstSize: Maximum burst size. Defaults to maxRequests if not specified.
+     */
     public init(maxRequests: Int, timeWindow: TimeInterval, burstSize: Int? = nil) {
         self.maxRequests = maxRequests
         self.timeWindow = timeWindow

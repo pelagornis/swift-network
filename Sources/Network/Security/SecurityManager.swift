@@ -3,29 +3,145 @@ import Foundation
 @preconcurrency import Security
 #endif
 
+/**
+ * A protocol for managing SSL/TLS certificate validation and pinning.
+ * 
+ * SecurityManager provides certificate validation, certificate pinning,
+ * and domain name validation for secure network communications.
+ * 
+ * ## Features
+ * - Certificate validation using system trust store
+ * - Certificate pinning for additional security
+ * - Domain name validation
+ * - Configurable invalid certificate handling
+ * 
+ * ## Usage
+ * ```swift
+ * let securityManager = DefaultSecurityManager(
+ *     allowInvalidCertificates: false,
+ *     validateDomainName: true
+ * )
+ * 
+ * // Add certificate pinning
+ * if let certificate = loadCertificate() {
+ *     securityManager.addCertificatePinning(certificate, for: "api.example.com")
+ * }
+ * ```
+ */
 #if canImport(Security)
 public protocol SecurityManager {
+    /**
+     * Validates a server certificate against the trust store and pinned certificates.
+     * 
+     * - Parameters:
+     *   - serverTrust: The server trust object to validate
+     *   - domain: The domain name for validation
+     * - Returns: `true` if the certificate is valid, `false` otherwise
+     */
     func validateCertificate(_ serverTrust: SecTrust, domain: String) -> Bool
+    
+    /**
+     * Adds a certificate for pinning to a specific domain.
+     * 
+     * - Parameters:
+     *   - certificate: The certificate to pin
+     *   - domain: The domain to pin the certificate for
+     */
     func addCertificatePinning(_ certificate: SecCertificate, for domain: String)
+    
+    /**
+     * Removes certificate pinning for a specific domain.
+     * 
+     * - Parameter domain: The domain to remove pinning for
+     */
     func removeCertificatePinning(for domain: String)
+    
+    /**
+     * Checks if certificate pinning is configured for a domain.
+     * 
+     * - Parameter domain: The domain to check
+     * - Returns: `true` if certificate pinning is configured, `false` otherwise
+     */
     func isCertificatePinned(for domain: String) -> Bool
 }
 #else
+/**
+ * A protocol for managing SSL/TLS certificate validation and pinning.
+ * 
+ * This version is used when the Security framework is not available.
+ * All methods accept Any types instead of Security framework types.
+ */
 public protocol SecurityManager {
+    /**
+     * Validates a server certificate against the trust store and pinned certificates.
+     * 
+     * - Parameters:
+     *   - serverTrust: The server trust object to validate
+     *   - domain: The domain name for validation
+     * - Returns: `true` if the certificate is valid, `false` otherwise
+     */
     func validateCertificate(_ serverTrust: Any, domain: String) -> Bool
+    
+    /**
+     * Adds a certificate for pinning to a specific domain.
+     * 
+     * - Parameters:
+     *   - certificate: The certificate to pin
+     *   - domain: The domain to pin the certificate for
+     */
     func addCertificatePinning(_ certificate: Any, for domain: String)
+    
+    /**
+     * Removes certificate pinning for a specific domain.
+     * 
+     * - Parameter domain: The domain to remove pinning for
+     */
     func removeCertificatePinning(for domain: String)
+    
+    /**
+     * Checks if certificate pinning is configured for a domain.
+     * 
+     * - Parameter domain: The domain to check
+     * - Returns: `true` if certificate pinning is configured, `false` otherwise
+     */
     func isCertificatePinned(for domain: String) -> Bool
 }
 #endif
 
 #if canImport(Security)
+/**
+ * A concrete implementation of SecurityManager using the Security framework.
+ * 
+ * DefaultSecurityManager provides comprehensive certificate validation and
+ * pinning capabilities with thread-safe operations and configurable behavior.
+ * 
+ * ## Features
+ * - Standard certificate validation using SecTrustEvaluateWithError
+ * - Certificate pinning with domain-specific certificates
+ * - Thread-safe operations using concurrent dispatch queue
+ * - Configurable invalid certificate handling
+ * - Domain name validation support
+ */
 public final class DefaultSecurityManager: SecurityManager, @unchecked Sendable {
+    /// Concurrent queue for thread-safe operations
     private let queue = DispatchQueue(label: "com.network.security", attributes: .concurrent)
+    
+    /// Dictionary mapping domains to sets of pinned certificate data
     private var pinnedCertificates: [String: Set<Data>] = [:]
+    
+    /// Whether to allow invalid certificates (for testing/development)
     private let allowInvalidCertificates: Bool
+    
+    /// Whether to validate domain names
     private let validateDomainName: Bool
     
+    /**
+     * Creates a new DefaultSecurityManager.
+     * 
+     * - Parameters:
+     *   - allowInvalidCertificates: Whether to allow invalid certificates. Defaults to false.
+     *   - validateDomainName: Whether to validate domain names. Defaults to true.
+     */
     public init(allowInvalidCertificates: Bool = false, validateDomainName: Bool = true) {
         self.allowInvalidCertificates = allowInvalidCertificates
         self.validateDomainName = validateDomainName

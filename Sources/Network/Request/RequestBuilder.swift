@@ -1,14 +1,52 @@
 import Foundation
 
+/**
+ * A protocol for building network requests from endpoints.
+ * 
+ * RequestBuilder is responsible for converting Endpoint instances into
+ * URLRequest objects that can be executed by the networking system.
+ */
 public protocol RequestBuilder {
+    /**
+     * Builds a request from the configured endpoint and modifiers.
+     * 
+     * - Returns: A BuiltRequest containing the URLRequest and any additional metadata
+     * - Throws: `NetworkError` if the request cannot be built
+     */
     func build() throws -> BuiltRequest
 }
 
+/**
+ * A concrete implementation of RequestBuilder that creates URLRequests from Endpoints.
+ * 
+ * NetworkRequestBuilder handles all aspects of request construction including:
+ * - URL composition and validation
+ * - Header management and merging
+ * - Request body encoding
+ * - Timeout and cache policy configuration
+ * - Request modifier application
+ * 
+ * ## Usage
+ * ```swift
+ * let builder = NetworkRequestBuilder(endpoint: UserEndpoint())
+ * builder.addModifier(TimeoutModifier(30))
+ * let request = try builder.build()
+ * ```
+ */
 public class NetworkRequestBuilder: RequestBuilder {
+    /// The endpoint that defines the request structure
     private let endpoint: Endpoint
+    
+    /// Additional headers to be merged with endpoint headers
     private var extraHeaders: [String: String] = [:]
+    
+    /// Custom timeout override for this request
     private var timeout: TimeInterval?
+    
+    /// Custom cache policy override for this request
     private var cachePolicy: URLRequest.CachePolicy?
+    
+    /// Request modifiers to apply during building
     private var requestModifiers: [RequestModifier] = []
     
     public init(endpoint: Endpoint) {

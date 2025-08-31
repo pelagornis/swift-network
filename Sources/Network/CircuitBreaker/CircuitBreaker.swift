@@ -1,25 +1,121 @@
 import Foundation
 
+/**
+ * States that a circuit breaker can be in.
+ * 
+ * The circuit breaker pattern uses these states to control request flow
+ * and provide fault tolerance for failing services.
+ */
 public enum CircuitBreakerState {
-    case closed      // Normal operation
-    case open        // Failing, reject requests
-    case halfOpen    // Testing if service is back
+    /// Normal operation - requests are allowed to proceed
+    case closed
+    
+    /// Failing state - requests are rejected immediately
+    case open
+    
+    /// Testing state - limited requests are allowed to test recovery
+    case halfOpen
 }
 
+/**
+ * A protocol for implementing circuit breaker pattern.
+ * 
+ * Circuit breaker provides fault tolerance by temporarily stopping requests
+ * when failures exceed a threshold. This prevents cascading failures and
+ * allows the system to recover gracefully.
+ * 
+ * ## Circuit Breaker States
+ * - **Closed**: Normal operation, requests are allowed
+ * - **Open**: Failure threshold reached, requests are blocked
+ * - **Half-Open**: Testing recovery, limited requests are allowed
+ * 
+ * ## Usage
+ * ```swift
+ * let circuitBreaker = DefaultCircuitBreaker(
+ *     config: CircuitBreakerConfig(
+ *         failureThreshold: 5,
+ *         recoveryTimeout: 30
+ *     )
+ * )
+ * 
+ * if circuitBreaker.shouldAllowRequest() {
+ *     // Make the request
+ * } else {
+ *     // Handle circuit breaker open
+ * }
+ * ```
+ */
 public protocol CircuitBreaker {
+    /**
+     * Determines if a request should be allowed to proceed.
+     * 
+     * - Returns: `true` if the request should be allowed, `false` if blocked
+     */
     func shouldAllowRequest() -> Bool
+    
+    /**
+     * Records a successful request.
+     * 
+     * This method updates the circuit breaker's internal state and may
+     * cause state transitions (e.g., from half-open to closed).
+     */
     func recordSuccess()
+    
+    /**
+     * Records a failed request.
+     * 
+     * This method updates the circuit breaker's internal state and may
+     * cause state transitions (e.g., from closed to open).
+     * 
+     * - Parameter error: The error that occurred
+     */
     func recordFailure(_ error: Error)
+    
+    /**
+     * Returns the current state of the circuit breaker.
+     * 
+     * - Returns: The current circuit breaker state
+     */
     func getState() -> CircuitBreakerState
+    
+    /**
+     * Manually resets the circuit breaker to closed state.
+     * 
+     * This method forces the circuit breaker back to normal operation,
+     * clearing all failure counts and timers.
+     */
     func reset()
 }
 
+/**
+ * Configuration for circuit breaker behavior.
+ * 
+ * CircuitBreakerConfig defines the parameters that control how the circuit
+ * breaker operates, including failure thresholds, recovery timeouts, and
+ * state transition conditions.
+ */
 public struct CircuitBreakerConfig {
+    /// Number of failures before opening the circuit
     public let failureThreshold: Int
+    
+    /// Time to wait before attempting recovery (half-open state)
     public let recoveryTimeout: TimeInterval
+    
+    /// Expected failure rate for adaptive thresholds
     public let expectedFailureRate: Double
+    
+    /// Minimum number of successful requests in half-open state before closing
     public let minimumRequestCount: Int
     
+    /**
+     * Creates a new CircuitBreakerConfig.
+     * 
+     * - Parameters:
+     *   - failureThreshold: Number of failures before opening circuit. Defaults to 5.
+     *   - recoveryTimeout: Time to wait before recovery attempt. Defaults to 60 seconds.
+     *   - expectedFailureRate: Expected failure rate (0.0 to 1.0). Defaults to 0.5.
+     *   - minimumRequestCount: Minimum successful requests for recovery. Defaults to 10.
+     */
     public init(
         failureThreshold: Int = 5,
         recoveryTimeout: TimeInterval = 60.0,
