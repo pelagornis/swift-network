@@ -1,11 +1,9 @@
 # Swift Network
 
+![Official](https://badge.pelagornis.com/official.svg)
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20macOS%20%7C%20tvOS%20%7C%20visionOS%20%7C%20watchOS-lightgrey.svg)](https://developer.apple.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/your-username/swift-network/workflows/Test/badge.svg)](https://github.com/your-username/swift-network/actions)
-[![Code Coverage](https://codecov.io/gh/your-username/swift-network/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/swift-network)
-[![Documentation](https://img.shields.io/badge/Documentation-DocC-blue.svg)](https://your-username.github.io/swift-network)
 
 A modern, protocol-oriented Swift networking library with enterprise-grade features.
 
@@ -28,7 +26,7 @@ Add the following to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-username/swift-network.git", from: "1.0.0")
+    .package(url: "https://github.com/pelagornis/swift-network.git", from: "vTag")
 ]
 ```
 
@@ -325,4 +323,4 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**swift-network** is under MIT license. See the [LICENSE](LICENSE) file for more info.
