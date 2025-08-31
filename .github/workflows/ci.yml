@@ -15,11 +15,11 @@ jobs:
   xcodebuild-latest:
     name: xcodebuild (16.4)
     runs-on: macos-15
-          strategy:
-        matrix:
-          command: [test, ""]
-          platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
-          xcode: ["16.4"]
+    strategy:
+      matrix:
+        command: [test, ""]
+        platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
+        xcode: ["16.4"]
     steps:
       - uses: actions/checkout@v4
 
