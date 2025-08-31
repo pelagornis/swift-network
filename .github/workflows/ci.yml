@@ -15,16 +15,15 @@ jobs:
   xcodebuild-latest:
     name: xcodebuild (16.4)
     runs-on: macos-15
-    strategy:
-      matrix:
-        command: [test, ""]
-        platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
-        xcode: ["16.4"]
+          strategy:
+        matrix:
+          platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
+          xcode: ["16.4"]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode ${{ matrix.xcode }}
-        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+              - name: Select Xcode ${{ matrix.xcode }}
+          run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
 
       - name: Update xcbeautify
         run: brew update && brew upgrade xcbeautify
@@ -48,22 +47,25 @@ jobs:
       - name: Update mtime for incremental builds
         uses: chetan/git-restore-mtime-action@v2
 
-      - name: Debug
+      - name: Build
         run: |
           case ${{ matrix.platform }} in
             "MACOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=macOS' ${{ matrix.command }}
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=macOS' build
               ;;
             "IOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' ${{ matrix.command }}
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' build
               ;;
             "TVOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=18.5' ${{ matrix.command }}
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=18.5' build
               ;;
             "WATCHOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5' ${{ matrix.command }}
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5' build
               ;;
             "VISIONOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5' ${{ matrix.command }}
+              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5' build
               ;;
           esac
+      
+      - name: Test
+        run: swift test
