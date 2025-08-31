@@ -15,15 +15,15 @@ jobs:
   xcodebuild-latest:
     name: xcodebuild (16.4)
     runs-on: macos-15
-          strategy:
-        matrix:
-          platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
-          xcode: ["16.4"]
+    strategy:
+      matrix:
+        platform: [IOS, MACOS, TVOS, WATCHOS, VISIONOS]
+        xcode: ["16.4"]
     steps:
       - uses: actions/checkout@v4
 
-              - name: Select Xcode ${{ matrix.xcode }}
-          run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+      - name: Select Xcode ${{ matrix.xcode }}
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
 
       - name: Update xcbeautify
         run: brew update && brew upgrade xcbeautify
@@ -37,9 +37,9 @@ jobs:
           path: |
             ~/.derivedData
           key: |
-            deriveddata-xcodebuild-${{ matrix.platform }}-${{ matrix.xcode }}-${{ matrix.command }}-${{ hashFiles('**/Sources/**/*.swift', '**/Tests/**/*.swift') }}
+            deriveddata-xcodebuild-${{ matrix.platform }}-${{ matrix.xcode }}-${{ hashFiles('**/Sources/**/*.swift', '**/Tests/**/*.swift') }}
           restore-keys: |
-            deriveddata-xcodebuild-${{ matrix.platform }}-${{ matrix.xcode }}-${{ matrix.command }}-
+            deriveddata-xcodebuild-${{ matrix.platform }}-${{ matrix.xcode }}-
 
       - name: Set IgnoreFileSystemDeviceInodeChanges flag
         run: defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
@@ -66,6 +66,6 @@ jobs:
               xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5' build
               ;;
           esac
-      
+
       - name: Test
         run: swift test
