@@ -1,5 +1,13 @@
 import Foundation
 
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#elseif canImport(ucrt)
+import ucrt
+#endif
+
 /**
  * A protocol for collecting network performance metrics.
  * 
@@ -19,6 +27,10 @@ import Foundation
  * let metrics = metricsCollector.getMetrics()
  * print("Average response time: \(metrics.averageResponseTime)s")
  * ```
+ * 
+ * ## Platform Support
+ * This protocol is supported on all Apple platforms (iOS, macOS, tvOS, watchOS, visionOS)
+ * and is designed to work consistently across different operating system versions.
  */
 public protocol NetworkMetricsCollector {
     /**
@@ -131,13 +143,21 @@ public struct NetworkMetrics {
 }
 
 public final class DefaultMetricsCollector: NetworkMetricsCollector, @unchecked Sendable {
-    private let queue = DispatchQueue(label: "com.network.metrics", attributes: .concurrent)
+    private let queue: DispatchQueue
     private var metrics = NetworkMetrics()
     private var requestStartTimes: [String: Date] = [:]
     private var cacheHits = 0
     private var cacheMisses = 0
     
-    public init() {}
+    public init() {
+        // 플랫폼별로 안전한 큐 생성
+        #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+        self.queue = DispatchQueue(label: "com.network.metrics", attributes: .concurrent)
+        #else
+        // Linux나 다른 플랫폼을 위한 fallback
+        self.queue = DispatchQueue(label: "com.network.metrics")
+        #endif
+    }
     
     public func recordRequest(_ request: URLRequest, startTime: Date) {
         queue.async(flags: .barrier) {
@@ -166,7 +186,14 @@ public final class DefaultMetricsCollector: NetworkMetricsCollector, @unchecked 
             let totalRequests = self.metrics.successCount + self.metrics.failureCount
             let newAverageResponseTime = (self.metrics.averageResponseTime * Double(totalRequests) + responseTime) / Double(totalRequests + 1)
             
-            let bytesTransferred = Int64(response.expectedContentLength)
+            // 플랫폼별로 안전한 바이트 계산
+            let bytesTransferred: Int64
+            #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+            bytesTransferred = Int64(response.expectedContentLength)
+            #else
+            // Linux나 다른 플랫폼에서는 기본값 사용
+            bytesTransferred = 0
+            #endif
             let newTotalBytes = self.metrics.totalBytesTransferred + bytesTransferred
             
             if error != nil {
