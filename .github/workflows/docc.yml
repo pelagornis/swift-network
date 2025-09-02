@@ -46,6 +46,7 @@ jobs:
 
       - name: Build documentation
         run: |
+          swift package reset
           rm -rf docs-out/.git
           rm -rf docs-out/main
           rm -rf docs-out/latest
