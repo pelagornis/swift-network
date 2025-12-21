@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		DC0A15F72E636F7100D8A5F2 /* Network in Frameworks */ = {isa = PBXBuildFile; productRef = DC0A15F62E636F7100D8A5F2 /* Network */; };
+		DC85AF6F2EF85A6F00A76E0E /* NetworkKit in Frameworks */ = {isa = PBXBuildFile; productRef = DC85AF6E2EF85A6F00A76E0E /* NetworkKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DC0A15F72E636F7100D8A5F2 /* Network in Frameworks */,
+				DC85AF6F2EF85A6F00A76E0E /* NetworkKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,7 +78,7 @@
 			);
 			name = Example;
 			packageProductDependencies = (
-				DC0A15F62E636F7100D8A5F2 /* Network */,
+				DC85AF6E2EF85A6F00A76E0E /* NetworkKit */,
 			);
 			productName = Example;
 			productReference = DCC91CA52E635DE6003C374E /* Example.app */;
@@ -282,7 +282,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pelagornis.Example;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pelagornis.NetworkKit.Example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -310,7 +310,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pelagornis.Example;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pelagornis.NetworkKit.Example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -342,9 +342,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		DC0A15F62E636F7100D8A5F2 /* Network */ = {
+		DC85AF6E2EF85A6F00A76E0E /* NetworkKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Network;
+			productName = NetworkKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

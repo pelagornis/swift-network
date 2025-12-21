@@ -1,5 +1,5 @@
 import Foundation
-import Network
+import NetworkKit
 
 // MARK: - GitHub API Service
 public class GitHubService: ObservableObject {

@@ -1,4 +1,4 @@
-# Swift Network
+# Swift NetworkKit
 
 ![Official](https://badge.pelagornis.com/official.svg)
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
@@ -40,7 +40,7 @@ Or add it directly in Xcode:
 
 The documentation for releases and ``main`` are available here:
 
-- [``main``](https://pelagornis.github.io/swift-network/main/documentation/network)
+- [``main``](https://pelagornis.github.io/swift-network/main/documentation/networkkit)
 
 
 ## Quick Start
@@ -48,7 +48,7 @@ The documentation for releases and ``main`` are available here:
 ### Basic Usage
 
 ```swift
-import Network
+import NetworkKit
 
 // Define your endpoint
 struct UserEndpoint: Endpoint {
@@ -75,7 +75,7 @@ do {
 ### With Enterprise Features
 
 ```swift
-import Network
+import NetworkKit
 
 // Configure enterprise features
 let retryPolicy = ExponentialBackoffRetryPolicy(maxAttempts: 3)
@@ -293,7 +293,7 @@ The library is designed for easy testing:
 
 ```swift
 import XCTest
-@testable import Network
+@testable import NetworkKit
 
 class NetworkTests: XCTestCase {
     func testNetworkRequest() async throws {

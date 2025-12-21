@@ -14,9 +14,9 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "Network",
+            name: "NetworkKit",
             targets: [
-                "Network"
+                "NetworkKit"
             ]
         )
     ],
@@ -25,15 +25,15 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Network",
+            name: "NetworkKit",
             resources: [
                 .process("Resources/PrivacyInfo.xcprivacy")
             ]
         ),
         .testTarget(
-            name: "NetworkTests",
-            dependencies: ["Network"],
-            path: "Tests/NetworkTests"
+            name: "NetworkKitTests",
+            dependencies: ["NetworkKit"],
+            path: "Tests/NetworkKitTests"
         )
     ]
 )

@@ -1,5 +1,5 @@
 import Foundation
-import Network
+import NetworkKit
 
 // MARK: - GitHub API Endpoints
 public enum GitHubEndpoint: Endpoint {
