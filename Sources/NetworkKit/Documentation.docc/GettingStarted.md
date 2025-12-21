@@ -30,7 +30,7 @@ dependencies: [
 ### 1. Import the Library
 
 ```swift
-import Network
+import NetworkKit
 ```
 
 ### 2. Define Your Endpoint
@@ -70,7 +70,7 @@ do {
 Here's a complete example showing how to fetch users from an API:
 
 ```swift
-import Network
+import NetworkKit
 
 // Define your data model
 struct User: Codable {

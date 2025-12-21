@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import Network
+@testable import NetworkKit
 
 // MARK: - Test Models
 private struct User: Codable {

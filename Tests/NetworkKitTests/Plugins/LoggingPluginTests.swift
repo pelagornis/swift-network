@@ -1,5 +1,5 @@
 import XCTest
-@testable import Network
+@testable import NetworkKit
 
 final class LoggingPluginTests: XCTestCase {
     fileprivate var mockLogger: MockNetworkLogger!
