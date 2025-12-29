@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import NetworkKit
 
 // MARK: - Search View Model
 @MainActor
@@ -37,7 +38,7 @@ public class SearchViewModel: ObservableObject {
             totalCount = response.totalCount
             hasMorePages = response.items.count >= 20 // GitHub API default per page
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = handleError(error)
             repositories = []
             totalCount = 0
         }
@@ -57,11 +58,83 @@ public class SearchViewModel: ObservableObject {
             repositories.append(contentsOf: response.items)
             hasMorePages = response.items.count >= 20
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = handleError(error)
             currentPage -= 1 // Revert page increment on error
         }
         
         isLoading = false
+    }
+    
+    // MARK: - Error Handling
+    private func handleError(_ error: Error) -> String {
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .serverError(let statusCode, let data):
+                let httpStatusCode = Http.StatusCode(rawValue: statusCode)
+                return getErrorMessage(for: httpStatusCode, data: data)
+                
+            case .rateLimitExceeded:
+                return "Rate limit exceeded. Please try again later."
+                
+            case .requestFailed(let urlError):
+                return "Network request failed: \(urlError.localizedDescription)"
+                
+            case .decodingError(let error):
+                return "Failed to parse response: \(error.localizedDescription)"
+                
+            case .circuitBreakerOpen:
+                return "Service temporarily unavailable. Please try again later."
+                
+            default:
+                return "An error occurred: \(networkError.localizedDescription)"
+            }
+        }
+        
+        return error.localizedDescription
+    }
+    
+    private func getErrorMessage(for statusCode: Http.StatusCode, data: Data) -> String {
+        switch statusCode {
+        case .unauthorized:
+            // Try to decode GitHub error message
+            if let gitHubError = try? JSONDecoder().decode(GitHubError.self, from: data) {
+                return "Authentication failed: \(gitHubError.message)"
+            }
+            return "Unauthorized. Please check your authentication."
+            
+        case .forbidden:
+            if let gitHubError = try? JSONDecoder().decode(GitHubError.self, from: data) {
+                return "Access forbidden: \(gitHubError.message)"
+            }
+            return "Access forbidden. You may not have permission to access this resource."
+            
+        case .notFound:
+            return "Repository not found. Please check your search query."
+            
+        case .tooManyRequests:
+            return "Too many requests. GitHub API rate limit exceeded. Please try again later."
+            
+        case .serviceUnavailable:
+            return "GitHub service is temporarily unavailable. Please try again later."
+            
+        case .badGateway, .gatewayTimeout:
+            return "GitHub API is experiencing issues. Please try again later."
+            
+        case .badRequest:
+            if let gitHubError = try? JSONDecoder().decode(GitHubError.self, from: data) {
+                return "Invalid request: \(gitHubError.message)"
+            }
+            return "Bad request. Please check your search query."
+            
+        default:
+            if statusCode.isClientError {
+                return "Client error (\(statusCode.rawValue)): \(statusCode.description)"
+            } else if statusCode.isServerError {
+                return "Server error (\(statusCode.rawValue)): \(statusCode.description)"
+            } else {
+                return "Unexpected error: \(statusCode.description)"
+            }
+        }
     }
     
     // MARK: - Clear Search

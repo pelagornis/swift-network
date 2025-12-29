@@ -1,14 +1,69 @@
 import Foundation
 import NetworkKit
 
+// MARK: - GitHub Response Handler
+struct GitHubResponseHandler: ResponseHandler {
+    let decoder: JSONDecoder
+    
+    init(decoder: JSONDecoder = JSONDecoder()) {
+        self.decoder = decoder
+    }
+    
+    func handle<T: Decodable>(_ data: Data, response: URLResponse, as type: T.Type) throws -> T {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.unknown
+        }
+        
+        let statusCode = Http.StatusCode(from: httpResponse)
+        
+        // Handle success status codes
+        if statusCode.isSuccess {
+            return try decoder.decode(type, from: data)
+        }
+        
+        // Handle specific error status codes
+        switch statusCode {
+        case .unauthorized:
+            // Try to decode GitHub error message
+            if (try? decoder.decode(GitHubError.self, from: data)) != nil {
+                throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            }
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            
+        case .forbidden:
+            // Rate limit or forbidden
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            
+        case .notFound:
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            
+        case .tooManyRequests:
+            // GitHub API rate limit
+            throw NetworkError.rateLimitExceeded
+            
+        case .serviceUnavailable, .badGateway, .gatewayTimeout:
+            // Server errors that might be retried
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            
+        default:
+            // Other errors
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+        }
+    }
+}
+
 // MARK: - GitHub API Service
 public class GitHubService: ObservableObject {
     private let networkProvider: NetworkProvider<GitHubEndpoint>
     
     public init() {
-        // Network provider with logging plugin
+        // Network provider with logging plugin and custom response handler
         let loggingPlugin = LoggingPlugin(logger: ConsoleLogger())
-        self.networkProvider = NetworkProvider(plugins: [loggingPlugin])
+        let responseHandler = GitHubResponseHandler()
+        self.networkProvider = NetworkProvider(
+            plugins: [loggingPlugin],
+            responseHandler: responseHandler
+        )
     }
     
     // MARK: - Search Repositories
