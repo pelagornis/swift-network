@@ -51,19 +51,19 @@ jobs:
         run: |
           case ${{ matrix.platform }} in
             "MACOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=macOS' build
+              xcodebuild -workspace Network.xcworkspace -scheme NetworkKit -destination 'platform=macOS' build
               ;;
             "IOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' build
+              xcodebuild -workspace Network.xcworkspace -scheme NetworkKit -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' build
               ;;
             "TVOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=18.5' build
+              xcodebuild -workspace Network.xcworkspace -scheme NetworkKit -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=18.5' build
               ;;
             "WATCHOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5' build
+              xcodebuild -workspace Network.xcworkspace -scheme NetworkKit -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (42mm),OS=11.5' build
               ;;
             "VISIONOS")
-              xcodebuild -workspace Network.xcworkspace -scheme Network -destination 'platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5' build
+              xcodebuild -workspace Network.xcworkspace -scheme NetworkKit -destination 'platform=visionOS Simulator,name=Apple Vision Pro,OS=2.5' build
               ;;
           esac
 
