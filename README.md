@@ -38,10 +38,9 @@ Or add it directly in Xcode:
 
 ## Documentation
 
-The documentation for releases and ``main`` are available here:
+The documentation for releases and `main` are available here:
 
-- [``main``](https://pelagornis.github.io/swift-network/main/documentation/networkkit)
-
+- [`main`](https://pelagornis.github.io/swift-network/main/documentation/networkkit)
 
 ## Quick Start
 
@@ -170,6 +169,185 @@ let provider = NetworkProvider<UserEndpoint>(
     plugins: [loggingPlugin, rateLimitingPlugin, circuitBreakerPlugin]
 )
 ```
+
+### Status Code Handling
+
+NetworkKit automatically handles HTTP status codes:
+
+- **2xx (200-299)**: Success - Response is decoded and returned
+- **Other status codes**: Error - Throws `NetworkError.serverError` with status code and response data
+
+NetworkKit provides a comprehensive `Http.StatusCode` enum with all standard HTTP status codes for type-safe status code handling.
+
+#### Using Status Code Enum
+
+```swift
+import NetworkKit
+
+// Create status code from integer
+let statusCode = Http.StatusCode(rawValue: 404)
+print(statusCode) // .notFound
+print(statusCode.rawValue) // 404
+print(statusCode.description) // "Not Found"
+
+// Check status code category
+if statusCode.isClientError {
+    print("This is a client error")
+}
+
+// Create from HTTPURLResponse
+if let httpResponse = response as? HTTPURLResponse {
+    let statusCode = Http.StatusCode(from: httpResponse)
+    print("Status: \(statusCode.description)")
+}
+```
+
+#### Basic Status Code Handling
+
+```swift
+do {
+    let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+    // Success - status code is 2xx
+} catch NetworkError.serverError(let statusCode, let data) {
+    // Convert integer status code to enum
+    let httpStatusCode = Http.StatusCode(rawValue: statusCode)
+
+    switch httpStatusCode {
+    case .badRequest:
+        print("Bad Request")
+    case .unauthorized:
+        print("Unauthorized")
+    case .notFound:
+        print("Not Found")
+    case .internalServerError:
+        print("Internal Server Error")
+    case .serviceUnavailable:
+        print("Service Unavailable")
+    default:
+        print("Server error: \(httpStatusCode.description) (\(statusCode))")
+    }
+
+    // Access response data if needed
+    if let errorMessage = String(data: data, encoding: .utf8) {
+        print("Error message: \(errorMessage)")
+    }
+} catch {
+    print("Other error: \(error)")
+}
+```
+
+#### Status Code Categories
+
+```swift
+let statusCode = Http.StatusCode(rawValue: 200)
+
+// Check status code category
+if statusCode.isSuccess {
+    print("Request succeeded")
+}
+
+if statusCode.isClientError {
+    print("Client error occurred")
+}
+
+if statusCode.isServerError {
+    print("Server error occurred")
+}
+
+if statusCode.isRedirection {
+    print("Redirection required")
+}
+
+if statusCode.isInformational {
+    print("Informational response")
+}
+```
+
+#### Custom Status Code Handling
+
+You can create a custom `ResponseHandler` to handle specific status codes differently using the `StatusCode` enum:
+
+```swift
+struct CustomResponseHandler: ResponseHandler {
+    let decoder: JSONDecoder
+
+    init(decoder: JSONDecoder = JSONDecoder()) {
+        self.decoder = decoder
+    }
+
+    func handle<T: Decodable>(_ data: Data, response: URLResponse, as type: T.Type) throws -> T {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.unknown
+        }
+
+        let statusCode = Http.StatusCode(from: httpResponse)
+
+        switch statusCode {
+        case .ok, .created, .accepted, .noContent:
+            // Success - decode and return
+            return try decoder.decode(type, from: data)
+        case .unauthorized:
+            // Unauthorized - throw specific error
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+        case .notFound:
+            // Not Found - return empty result or throw
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+        case .tooManyRequests:
+            // Rate limited - special handling
+            throw NetworkError.rateLimitExceeded
+        default:
+            if statusCode.isServerError {
+                // Retry server errors
+                throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            } else {
+                // Other client errors
+                throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+            }
+        }
+    }
+}
+
+// Use custom response handler
+let customHandler = CustomResponseHandler()
+let provider = NetworkProvider<UserEndpoint>(responseHandler: customHandler)
+```
+
+#### Status Code Validation
+
+The default `ResponseHandler` validates that status codes are in the 200-299 range. You can customize this behavior using the `StatusCode` enum:
+
+```swift
+struct PermissiveResponseHandler: ResponseHandler {
+    let decoder: JSONDecoder
+
+    func handle<T: Decodable>(_ data: Data, response: URLResponse, as type: T.Type) throws -> T {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.unknown
+        }
+
+        let statusCode = Http.StatusCode(from: httpResponse)
+
+        // Allow 2xx and 3xx status codes
+        guard statusCode.isSuccess || statusCode.isRedirection else {
+            throw NetworkError.serverError(statusCode: statusCode.rawValue, data: data)
+        }
+
+        return try decoder.decode(type, from: data)
+    }
+}
+```
+
+#### Available Status Codes
+
+The `Http.StatusCode` enum includes all standard HTTP status codes:
+
+- **1xx Informational**: `continue`, `switchingProtocols`, `processing`, `earlyHints`
+- **2xx Success**: `ok`, `created`, `accepted`, `noContent`, `partialContent`, etc.
+- **3xx Redirection**: `movedPermanently`, `found`, `seeOther`, `notModified`, `temporaryRedirect`, etc.
+- **4xx Client Error**: `badRequest`, `unauthorized`, `forbidden`, `notFound`, `methodNotAllowed`, `tooManyRequests`, etc.
+- **5xx Server Error**: `internalServerError`, `badGateway`, `serviceUnavailable`, `gatewayTimeout`, etc.
+
+For a complete list, see the `Http.StatusCode` enum definition in the source code.
 
 ## Enterprise Features
 
