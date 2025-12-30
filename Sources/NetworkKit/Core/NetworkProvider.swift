@@ -56,6 +56,12 @@ public final class NetworkProvider<E: Endpoint> {
     /// Cache manager for response caching
     private let cacheManager: CacheManager?
     
+    /// Network monitor for connectivity checking (iOS 12.0+, macOS 10.14+)
+    private var networkMonitor: (any NetworkMonitor)?
+    
+    /// Whether to check network connectivity before making requests
+    private let checkConnectivity: Bool
+    
     /**
      * Initializes a new NetworkProvider with the specified configuration.
      * 
@@ -70,6 +76,8 @@ public final class NetworkProvider<E: Endpoint> {
      *   - rateLimiter: Limiter for request rate control. Defaults to `nil`.
      *   - circuitBreaker: Circuit breaker for fault tolerance. Defaults to `nil`.
      *   - cacheManager: Manager for response caching. Defaults to `nil`.
+     *   - networkMonitor: Network monitor for connectivity checking. Defaults to `nil`.
+     *   - checkConnectivity: Whether to check network connectivity before requests. Defaults to `false`.
      */
     public init(session: Session = URLSession.shared,
                 plugins: [NetworkPlugin] = [],
@@ -81,7 +89,9 @@ public final class NetworkProvider<E: Endpoint> {
                 securityManager: SecurityManager? = nil,
                 rateLimiter: RateLimiter? = nil,
                 circuitBreaker: CircuitBreaker? = nil,
-                cacheManager: CacheManager? = nil) {
+                cacheManager: CacheManager? = nil,
+                checkConnectivity: Bool = false,
+                networkMonitor: (any NetworkMonitor)? = nil) {
         self.session = session
         self.plugins = plugins
         self.responseHandler = responseHandler
@@ -92,6 +102,15 @@ public final class NetworkProvider<E: Endpoint> {
         self.rateLimiter = rateLimiter
         self.circuitBreaker = circuitBreaker
         self.cacheManager = cacheManager
+        self.checkConnectivity = checkConnectivity
+        
+        if let monitor = networkMonitor {
+            self.networkMonitor = monitor
+            monitor.startMonitoring()
+        } else if checkConnectivity {
+            self.networkMonitor = DefaultNetworkMonitor()
+            (self.networkMonitor as? DefaultNetworkMonitor)?.startMonitoring()
+        }
     }
     
     /**
@@ -121,6 +140,30 @@ public final class NetworkProvider<E: Endpoint> {
      * - Throws: `NetworkError` if the request fails
      */
     public func request<T: Decodable>(_ endpoint: E, as type: T.Type, modifiers: [RequestModifier] = []) async throws -> T {
+        // Check network connectivity if enabled
+        if checkConnectivity {
+            if let monitor = networkMonitor {
+                let isConnected = await monitor.isConnected
+                if !isConnected {
+                    // If cache is available, try to return cached data
+                    if let cacheManager = cacheManager {
+                        let cacheKey = generateCacheKey(for: endpoint)
+                        if let cachedData: Data = cacheManager.get(for: cacheKey, as: Data.self) {
+                            do {
+                                let decoder = JSONDecoder()
+                                let cachedResult = try decoder.decode(T.self, from: cachedData)
+                                metricsCollector?.recordCacheHit(for: cacheKey)
+                                return cachedResult
+                            } catch {
+                                // Cache decode failed, throw no connection error
+                            }
+                        }
+                    }
+                    throw NetworkError.noConnection
+                }
+            }
+        }
+        
         // Check circuit breaker
         if let circuitBreaker = circuitBreaker, !circuitBreaker.shouldAllowRequest() {
             throw NetworkError.circuitBreakerOpen
@@ -336,6 +379,44 @@ public final class NetworkProvider<E: Endpoint> {
      */
     public func getMetrics() -> NetworkMetrics? {
         return (metricsCollector as? DefaultMetricsCollector)?.getMetrics()
+    }
+    
+    /**
+     * Gets the current network connection status.
+     * 
+     * Returns the current network status if connectivity checking is enabled.
+     * 
+     * - Returns: Current network status, or nil if connectivity checking is not enabled
+     */
+    public func getNetworkStatus() async -> NetworkStatus? {
+        guard let monitor = networkMonitor else {
+            return nil
+        }
+        return await monitor.currentStatus
+    }
+    
+    /**
+     * Checks if the device is currently connected to the internet.
+     * 
+     * - Returns: true if connected, false if not connected, or nil if connectivity checking is not enabled
+     */
+    public func isConnected() async -> Bool? {
+        guard let monitor = networkMonitor else {
+            return nil
+        }
+        return await monitor.isConnected
+    }
+    
+    /**
+     * Gets the current connection type.
+     * 
+     * - Returns: The connection type (WiFi, Cellular, etc.), or nil if not connected or monitoring is not enabled
+     */
+    public func getConnectionType() async -> ConnectionType? {
+        guard let monitor = networkMonitor else {
+            return nil
+        }
+        return await monitor.connectionType
     }
     
     /**

@@ -45,6 +45,9 @@ public enum NetworkError: LocalizedError, Equatable {
     /// An error occurred during caching operations
     case cachingError(Error)
     
+    /// Network connection is not available
+    case noConnection
+    
     /// An unknown error occurred
     case unknown
     
@@ -66,6 +69,8 @@ public enum NetworkError: LocalizedError, Equatable {
             return "Rate limit exceeded"
         case .cachingError(let error):
             return "Caching error: \(error.localizedDescription)"
+        case .noConnection:
+            return "Network connection is not available"
         case .unknown:
             return "Unknown error occurred"
         }
@@ -80,6 +85,7 @@ public enum NetworkError: LocalizedError, Equatable {
              (.circuitBreakerOpen, .circuitBreakerOpen),
              (.rateLimitExceeded, .rateLimitExceeded),
              (.cachingError, .cachingError),
+             (.noConnection, .noConnection),
              (.unknown, .unknown):
             return true
         default:
