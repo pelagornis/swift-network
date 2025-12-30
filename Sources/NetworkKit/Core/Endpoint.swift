@@ -199,114 +199,6 @@ public struct Timeout: HTTPComponent {
     }
 }
 
-/**
- * Environment component for HTTP DSL.
- * Allows setting environment values that can be inherited by child endpoints.
- * 
- * ## Usage
- * ```swift
- * HTTP {
- *     Environment {
- *         BaseURL("https://api.github.com")
- *         Headers([.accept("application/json")])
- *         Timeout(30.0)
- *     }
- *     Path("/search/repositories")
- *     Method(.get)
- * }
- * ```
- */
-public struct EnvironmentValue: HTTPComponent {
-    let environment: Environment
-    
-    public init(@EnvironmentBuilder _ content: () -> Environment) {
-        self.environment = content()
-    }
-    
-    public func apply(to endpoint: inout HTTPEndpoint, environment: inout Environment) {
-        // Merge environment values
-        environment = environment.merging(self.environment)
-        
-        // Apply environment to endpoint if not already set
-        if endpoint.baseURL == URL(string: "https://api.example.com")! && self.environment.baseURL != nil {
-            endpoint.baseURL = self.environment.baseURL!
-        }
-        if endpoint.headers.isEmpty && !self.environment.headers.isEmpty {
-            endpoint.headers = self.environment.headers
-        }
-        if endpoint.timeout == nil && self.environment.timeout != nil {
-            endpoint.timeout = self.environment.timeout
-        }
-    }
-}
-
-/**
- * Result builder for creating Environment values.
- * 
- * This builder allows you to define environment values in a declarative way:
- * ```swift
- * Environment {
- *     BaseURL("https://api.example.com")
- *     Headers([.accept("application/json")])
- *     Timeout(30.0)
- * }
- * ```
- */
-@resultBuilder
-public enum EnvironmentBuilder {
-    public static func buildBlock(_ components: HTTPComponent...) -> Environment {
-        var environment = Environment()
-        var dummyEndpoint = HTTPEndpoint()
-        for component in components {
-            component.apply(to: &dummyEndpoint, environment: &environment)
-        }
-        return environment
-    }
-    
-    public static func buildBlock(_ component: HTTPComponent) -> Environment {
-        var environment = Environment()
-        var dummyEndpoint = HTTPEndpoint()
-        component.apply(to: &dummyEndpoint, environment: &environment)
-        return environment
-    }
-    
-    public static func buildOptional(_ component: HTTPComponent?) -> Environment {
-        var environment = Environment()
-        var dummyEndpoint = HTTPEndpoint()
-        component?.apply(to: &dummyEndpoint, environment: &environment)
-        return environment
-    }
-    
-    public static func buildEither(first component: HTTPComponent) -> Environment {
-        var environment = Environment()
-        var dummyEndpoint = HTTPEndpoint()
-        component.apply(to: &dummyEndpoint, environment: &environment)
-        return environment
-    }
-    
-    public static func buildEither(second component: HTTPComponent) -> Environment {
-        var environment = Environment()
-        var dummyEndpoint = HTTPEndpoint()
-        component.apply(to: &dummyEndpoint, environment: &environment)
-        return environment
-    }
-}
-
-/**
- * Creates an Environment using the DSL builder.
- * 
- * ## Usage
- * ```swift
- * let env = HTTPEnvironment {
- *     BaseURL("https://api.github.com")
- *     Headers([.accept("application/json")])
- * }
- * ```
- */
-public func HTTPEnvironment(@EnvironmentBuilder _ content: () -> Environment) -> Environment {
-    return content()
-}
-
 // MARK: - HTTP Builder
 
 /**
@@ -355,14 +247,7 @@ public enum HTTPBuilder {
         // Clear base after use
         baseEndpoint = nil
         
-        // First pass: collect environment values
-        for component in components {
-            if let envComponent = component as? EnvironmentValue {
-                envComponent.apply(to: &endpoint, environment: &environment)
-            }
-        }
-        
-        // Second pass: apply all components with environment
+        // Apply all components
         for component in components {
             component.apply(to: &endpoint, environment: &environment)
         }
@@ -487,18 +372,6 @@ public func HTTP(base: HTTPEndpoint, @HTTPBuilder _ content: () -> HTTPEndpoint)
  * 
  * ## Usage
  * 
- * ### Traditional Style
- * ```swift
- * struct UserEndpoint: Endpoint {
- *     let baseURL = URL(string: "https://api.example.com")!
- *     let path = "/users"
- *     let method = Http.Method.get
- *     let task = Http.Task.requestPlain
- *     let headers = [Http.Header.accept("application/json")]
- *     let timeout: TimeInterval? = 30
- * }
- * ```
- * 
  * ### SwiftUI-Style DSL with body property
  * ```swift
  * enum UserEndpoint: Endpoint {
@@ -524,17 +397,8 @@ public func HTTP(base: HTTPEndpoint, @HTTPBuilder _ content: () -> HTTPEndpoint)
  * }
  * ```
  * 
- * ## Required Properties
- * - `baseURL`: The base URL of the API
- * - `path`: The specific endpoint path
- * - `method`: The HTTP method to use
- * - `task`: The request task (body, parameters, etc.)
- * 
- * ## Optional Properties
- * - `body`: SwiftUI-style endpoint definition using DSL (alternative to individual properties)
- * - `headers`: Additional HTTP headers
- * - `sampleData`: Sample data for testing/stubbing
- * - `timeout`: Custom timeout for this endpoint
+ * All endpoint properties (`baseURL`, `path`, `method`, `task`, `headers`, `sampleData`, `timeout`)
+ * are accessed through the `body` property, which should resolve to an `HTTPEndpoint`.
  */
 public protocol Endpoint {
     associatedtype Body: Endpoint
