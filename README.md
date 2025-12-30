@@ -17,6 +17,7 @@ A modern, protocol-oriented Swift networking library with enterprise-grade featu
 - 🎯 **Type Safety** - Full type safety with generics and protocols
 - ⚡ **Async/Await** - Modern Swift concurrency support
 - 🧪 **Testable** - Designed for easy testing and mocking
+- 📡 **Network Connectivity Monitoring** - Real-time network status monitoring using Network Framework (iOS 12.0+, macOS 10.14+)
 
 ## Installation
 
@@ -350,6 +351,139 @@ The `Http.StatusCode` enum includes all standard HTTP status codes:
 For a complete list, see the `Http.StatusCode` enum definition in the source code.
 
 ## Enterprise Features
+
+### Network Connectivity Monitoring
+
+NetworkKit provides real-time network connectivity monitoring using Apple's Network Framework. This allows your app to adapt its behavior based on network conditions and connection type.
+
+#### Basic Usage
+
+```swift
+import NetworkKit
+
+// Create provider with connectivity monitoring enabled
+let provider = NetworkProvider<UserEndpoint>(checkConnectivity: true)
+
+// Check current connection status
+if let isConnected = await provider.isConnected() {
+    if isConnected {
+        print("Device is connected to the internet")
+    } else {
+        print("No internet connection")
+    }
+}
+
+// Get connection type
+if let connectionType = await provider.getConnectionType() {
+    switch connectionType {
+    case .wifi:
+        print("Connected via WiFi")
+    case .cellular:
+        print("Connected via Cellular")
+    case .ethernet:
+        print("Connected via Ethernet")
+    default:
+        print("Connected via \(connectionType)")
+    }
+}
+
+// Get detailed network status
+if let status = await provider.getNetworkStatus() {
+    switch status {
+    case .connected(let type):
+        print("Connected via \(type)")
+    case .disconnected:
+        print("No connection")
+    case .connecting:
+        print("Connecting...")
+    case .requiresConnection:
+        print("Connection required")
+    }
+}
+```
+
+#### Automatic Connectivity Checking
+
+When connectivity checking is enabled, NetworkProvider automatically checks the connection before making requests. If no connection is available, it will:
+
+1. Return cached data if available
+2. Throw `NetworkError.noConnection` if no cache is available
+
+```swift
+// Provider with connectivity checking and caching
+let cacheManager = MemoryCacheManager()
+let provider = NetworkProvider<UserEndpoint>(
+    cacheManager: cacheManager,
+    checkConnectivity: true
+)
+
+do {
+    // If offline, will return cached data or throw noConnection error
+    let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+} catch NetworkError.noConnection {
+    print("No internet connection and no cached data available")
+}
+```
+
+#### Custom Network Monitor
+
+You can provide a custom network monitor for specific use cases:
+
+```swift
+// Monitor only WiFi connections
+let wifiMonitor = WiFiNetworkMonitor()
+wifiMonitor.startMonitoring()
+
+// Monitor only cellular connections
+let cellularMonitor = CellularNetworkMonitor()
+cellularMonitor.startMonitoring()
+
+// Use custom monitor with provider
+let provider = NetworkProvider<UserEndpoint>(
+    networkMonitor: wifiMonitor
+)
+
+// Observe network status changes
+Task {
+    for await status in wifiMonitor.statusUpdates {
+        switch status {
+        case .connected(let type):
+            print("Network connected: \(type)")
+        case .disconnected:
+            print("Network disconnected")
+        default:
+            break
+        }
+    }
+}
+```
+
+#### Standalone Network Monitoring
+
+You can also use NetworkMonitor independently:
+
+```swift
+let monitor = DefaultNetworkMonitor()
+monitor.startMonitoring()
+
+// Check current status
+let status = await monitor.currentStatus
+
+// Observe status changes
+Task {
+    for await status in monitor.statusUpdates {
+        print("Network status changed: \(status)")
+    }
+}
+
+// Check if connected
+let isConnected = await monitor.isConnected
+
+// Get connection type
+if let type = await monitor.connectionType {
+    print("Connection type: \(type)")
+}
+```
 
 ### Retry Policies
 
