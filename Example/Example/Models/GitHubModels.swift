@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - GitHub Repository Model
-public struct GitHubRepository: Codable, Identifiable {
+public struct GitHubRepository: Codable, Identifiable, Sendable {
     public let id: Int
     public let name: String
     public let fullName: String
@@ -28,7 +28,7 @@ public struct GitHubRepository: Codable, Identifiable {
 }
 
 // MARK: - Repository Owner Model
-public struct RepositoryOwner: Codable {
+public struct RepositoryOwner: Codable, Sendable {
     public let login: String
     public let id: Int
     public let avatarUrl: String

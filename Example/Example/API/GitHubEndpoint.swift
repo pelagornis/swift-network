@@ -6,27 +6,19 @@ public enum GitHubEndpoint: Endpoint {
     case searchRepositories(query: String, page: Int = 1, perPage: Int = 20)
     case getRepository(owner: String, repo: String)
     
-    public var baseURL: URL {
-        return URL(string: "https://api.github.com")!
-    }
-    
-    public var path: String {
-        switch self {
-        case .searchRepositories:
-            return "/search/repositories"
-        case .getRepository(let owner, let repo):
-            return "/repos/\(owner)/\(repo)"
+    // Base endpoint with common settings
+    private static var baseEndpoint: HTTPEndpoint {
+        HTTP {
+            BaseURL("https://api.github.com")
+            Headers([
+                .accept("application/vnd.github.v3+json"),
+                .userAgent("GitHubSearchApp/1.0")
+            ])
+            Timeout(30.0)
         }
     }
-    
-    public var method: Http.Method {
-        switch self {
-        case .searchRepositories, .getRepository:
-            return .get
-        }
-    }
-    
-    public var task: Http.Task {
+
+    public var body: HTTPEndpoint {
         switch self {
         case .searchRepositories(let query, let page, let perPage):
             let parameters = [
@@ -36,20 +28,17 @@ public enum GitHubEndpoint: Endpoint {
                 "sort": "stars",
                 "order": "desc"
             ]
-            return .requestParameters(parameters, encoding: .url)
-        case .getRepository:
-            return .requestPlain
+            return HTTP(base: Self.baseEndpoint) {
+                Path("/search/repositories")
+                Method(.get)
+                HTTPTask(.requestParameters(parameters, encoding: .url))
+            }
+        case .getRepository(let owner, let repo):
+            return HTTP(base: Self.baseEndpoint) {
+                Path("/repos/\(owner)/\(repo)")
+                Method(.get)
+                HTTPTask(.requestPlain)
+            }
         }
-    }
-    
-    public var headers: [Http.Header] {
-        return [
-            .accept("application/vnd.github.v3+json"),
-            .userAgent("GitHubSearchApp/1.0")
-        ]
-    }
-    
-    public var timeout: TimeInterval? {
-        return 30.0
     }
 }

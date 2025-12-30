@@ -1,97 +1,93 @@
 # GitHub Search App Example
 
-이 예시 앱은 `swift-network` 라이브러리를 사용하여 GitHub API를 호출하고 저장소를 검색하는 SwiftUI 앱입니다.
+This example app demonstrates how to use the `swift-network` library to call the GitHub API and search for repositories in a SwiftUI app.
 
-## 기능
+## Features
 
-- 🔍 GitHub 저장소 검색
-- 📱 SwiftUI 기반 모던 UI
-- 🌐 Network 라이브러리를 사용한 API 호출
-- 📄 무한 스크롤 (페이지네이션)
+- 🔍 GitHub repository search
+- 📱 Modern SwiftUI-based UI
+- 🌐 API calls using the Network library
+- 📄 Infinite scroll (pagination)
 - 🔄 Pull-to-refresh
-- 📊 저장소 상세 정보 표시
-- 🎨 프로그래밍 언어별 색상 표시
-- ⭐ 스타 수 표시
+- 📊 Repository detail information display
+- 🎨 Programming language color coding
+- ⭐ Star count display
 
-## 실행 방법
+## Running the App
 
-### 1. 디렉토리 이동
+### 1. Navigate to Directory
+
 ```bash
-cd Examples/GitHubSearchApp
+cd Example/Example
 ```
 
-### 2. 앱 빌드 및 실행
+### 2. Build and Run
+
 ```bash
 swift run
 ```
 
-### 3. iOS 시뮬레이터에서 실행
+### 3. Run on iOS Simulator
+
 ```bash
 swift run --configuration release
 ```
 
-## 앱 구조
+## App Structure
 
 ```
-GitHubSearchApp/
-├── GitHubSearchApp.swift          # 메인 앱 파일
+Example/
+├── GitHubSearchApp.swift          # Main app file
 ├── Models/
-│   └── GitHubModels.swift         # GitHub API 모델
+│   └── GitHubModels.swift         # GitHub API models
 ├── API/
-│   ├── GitHubEndpoint.swift       # API 엔드포인트 정의
-│   └── GitHubService.swift        # API 서비스 클래스
+│   ├── GitHubEndpoint.swift       # API endpoint definitions
+│   └── GitHubService.swift        # API service class
 ├── ViewModels/
-│   └── SearchViewModel.swift      # 검색 뷰 모델
-├── Views/
-│   ├── SearchView.swift           # 메인 검색 뷰
-│   └── RepositoryCardView.swift   # 저장소 카드 뷰
-└── Package.swift                  # Swift Package 설정
+│   └── SearchViewModel.swift      # Search view model
+└── Views/
+    ├── SearchView.swift           # Main search view
+    └── RepositoryCardView.swift   # Repository card view
 ```
 
-## Network 라이브러리 사용 예시
+## Network Library Usage Examples
 
-### 1. Endpoint 정의
+### 1. Endpoint Definition
+
 ```swift
 public enum GitHubEndpoint: Endpoint {
     case searchRepositories(query: String, page: Int = 1, perPage: Int = 20)
-    
-    public var baseURL: URL {
-        return URL(string: "https://api.github.com")!
-    }
-    
-    public var path: String {
-        return "/search/repositories"
-    }
-    
-    public var method: Http.Method {
-        return .get
-    }
-    
-    public var task: Http.Task {
-        let parameters = [
-            "q": query,
-            "page": "\(page)",
-            "per_page": "\(perPage)"
-        ]
-        return .requestParameters(parameters: parameters, encoding: .url)
+
+    public var body: HTTPEndpoint {
+        switch self {
+        case .searchRepositories(let query, let page, let perPage):
+            return HTTP {
+                BaseURL("https://api.github.com")
+                Path("/search/repositories")
+                Method(.get)
+                HTTPTask(.requestParameters([...], encoding: .url))
+            }
+        }
     }
 }
 ```
 
-### 2. Network Provider 설정
+### 2. Network Provider Setup
+
 ```swift
 public class GitHubService: ObservableObject {
     private let networkProvider: NetworkProvider<GitHubEndpoint>
-    
+
     public init() {
-        // 로깅 플러그인과 함께 Network Provider 초기화
-        let loggingPlugin = LoggingPlugin(logger: ConsoleLogger(level: .info))
+        // Initialize Network Provider with logging plugin
+        let loggingPlugin = LoggingPlugin(logger: ConsoleLogger())
         self.networkProvider = NetworkProvider(plugins: [loggingPlugin])
     }
 }
 ```
 
-### 3. API 호출
+### 3. API Call
+
 ```swift
 public func searchRepositories(query: String, page: Int = 1) async throws -> GitHubSearchResponse {
     let endpoint = GitHubEndpoint.searchRepositories(query: query, page: page)
@@ -99,39 +95,43 @@ public func searchRepositories(query: String, page: Int = 1) async throws -> Git
 }
 ```
 
-## 주요 특징
+## Key Features
 
 ### 1. Protocol-Oriented Design
-- `Endpoint` 프로토콜을 사용한 타입 안전한 API 정의
-- `NetworkProvider`를 통한 일관된 네트워킹 인터페이스
+
+- Type-safe API definitions using the `Endpoint` protocol
+- Consistent networking interface through `NetworkProvider`
 
 ### 2. Plugin System
-- `LoggingPlugin`을 사용한 요청/응답 로깅
-- 확장 가능한 플러그인 아키텍처
+
+- Request/response logging using `LoggingPlugin`
+- Extensible plugin architecture
 
 ### 3. Error Handling
-- `NetworkError`를 통한 체계적인 에러 처리
-- 사용자 친화적인 에러 메시지 표시
+
+- Systematic error handling through `NetworkError`
+- User-friendly error message display
 
 ### 4. Modern Swift Features
-- `async/await`를 사용한 비동기 프로그래밍
-- `@MainActor`를 사용한 UI 업데이트
-- SwiftUI의 `@StateObject`와 `@Published`를 활용한 반응형 UI
 
-## 스크린샷
+- Asynchronous programming using `async/await`
+- UI updates using `@MainActor`
+- Reactive UI using SwiftUI's `@StateObject` and `@Published`
 
-앱은 다음과 같은 화면들을 포함합니다:
+## Screenshots
 
-1. **검색 화면**: 저장소 검색 입력 및 결과 목록
-2. **저장소 카드**: 각 저장소의 기본 정보 표시
-3. **상세 화면**: 선택된 저장소의 자세한 정보
+The app includes the following screens:
 
-## 요구사항
+1. **Search Screen**: Repository search input and results list
+2. **Repository Card**: Basic information display for each repository
+3. **Detail Screen**: Detailed information for the selected repository
+
+## Requirements
 
 - iOS 16.0+ / macOS 13.0+
 - Swift 6.0+
 - Xcode 15.0+
 
-## 라이선스
+## License
 
-이 예시 앱은 MIT 라이선스 하에 배포됩니다.
+This example app is distributed under the MIT license.
