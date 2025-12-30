@@ -38,7 +38,7 @@ public class LoggingPlugin: NetworkPlugin {
         self.logLevel = logLevel
     }
     
-    public func willSend(_ request: URLRequest, target: Endpoint) {
+    public func willSend(_ request: URLRequest, target: any Endpoint) {
         guard logLevel.shouldLog(.info) else { return }
         
         let message = """
@@ -52,7 +52,7 @@ public class LoggingPlugin: NetworkPlugin {
         logger.log(message, level: .info)
     }
     
-    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint) {
+    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint) {
         switch result {
         case .success((let data, let response)):
             guard logLevel.shouldLog(.info) else { return }
@@ -79,7 +79,6 @@ public class LoggingPlugin: NetworkPlugin {
         }
     }
 }
-
 /**
  * A protocol for custom loggers that can be used with LoggingPlugin.
  * 
@@ -171,3 +170,4 @@ public extension LogLevel {
         }
     }
 }
+

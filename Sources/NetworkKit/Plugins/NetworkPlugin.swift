@@ -35,7 +35,7 @@ public protocol NetworkPlugin {
      *   - request: The URLRequest that will be sent
      *   - target: The endpoint that generated this request
      */
-    func willSend(_ request: URLRequest, target: Endpoint)
+    func willSend(_ request: URLRequest, target: any Endpoint)
     
     /**
      * Called after a response is received.
@@ -46,7 +46,7 @@ public protocol NetworkPlugin {
      *   - result: The result containing either the response data and URLResponse, or an error
      *   - target: The endpoint that generated the original request
      */
-    func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint)
+    func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint)
 }
 
 /**
@@ -56,8 +56,8 @@ public protocol NetworkPlugin {
  */
 public extension NetworkPlugin {
     /// Default empty implementation for willSend
-    func willSend(_ request: URLRequest, target: Endpoint) {}
+    func willSend(_ request: URLRequest, target: any Endpoint) {}
     
     /// Default empty implementation for didReceive
-    func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint) {}
+    func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint) {}
 }

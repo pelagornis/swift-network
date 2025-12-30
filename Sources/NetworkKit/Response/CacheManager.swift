@@ -53,7 +53,6 @@ public protocol CacheManager {
      */
     func clear()
 }
-
 /**
  * A memory-based implementation of CacheManager.
  * 
@@ -127,3 +126,4 @@ private struct CacheEntry {
         return Date() > expirationDate
     }
 }
+

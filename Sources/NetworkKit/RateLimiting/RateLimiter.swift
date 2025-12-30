@@ -1,20 +1,5 @@
 import Foundation
 
-// MARK: - Simple Endpoint for Sendable Closures
-/**
- * A simple endpoint implementation for use with Sendable closures.
- * 
- * This internal struct provides a minimal Endpoint implementation
- * that can be safely used across thread boundaries.
- */
-private struct SimpleEndpoint: Endpoint, @unchecked Sendable {
-    let baseURL: URL
-    let path: String
-    let method: Http.Method
-    let task: Http.Task = .requestPlain
-    let headers: [Http.Header] = []
-    let timeout: TimeInterval? = nil
-}
 
 /**
  * A protocol for implementing rate limiting functionality.
@@ -48,7 +33,7 @@ public protocol RateLimiter {
      * - Parameter endpoint: The endpoint for which to check rate limits
      * - Returns: `true` if the request should be allowed, `false` if rate limited
      */
-    func shouldAllowRequest(for endpoint: Endpoint) -> Bool
+    func shouldAllowRequest(for endpoint: any Endpoint) -> Bool
     
     /**
      * Records that a request was made for rate limiting purposes.
@@ -58,7 +43,7 @@ public protocol RateLimiter {
      * 
      * - Parameter endpoint: The endpoint for which the request was made
      */
-    func recordRequest(for endpoint: Endpoint)
+    func recordRequest(for endpoint: any Endpoint)
     
     /**
      * Resets the rate limiter's internal state.
@@ -112,14 +97,14 @@ public final class TokenBucketRateLimiter: RateLimiter, @unchecked Sendable {
         self.lastRefillTime = Date()
     }
     
-    public func shouldAllowRequest(for endpoint: Endpoint) -> Bool {
+    public func shouldAllowRequest(for endpoint: any Endpoint) -> Bool {
         return queue.sync {
             refillTokens()
             return tokens >= 1.0
         }
     }
     
-    public func recordRequest(for endpoint: Endpoint) {
+    public func recordRequest(for endpoint: any Endpoint) {
         queue.async(flags: .barrier) {
             self.refillTokens()
             self.tokens = max(0, self.tokens - 1.0)
@@ -152,14 +137,14 @@ public final class SlidingWindowRateLimiter: RateLimiter, @unchecked Sendable {
         self.config = config
     }
     
-    public func shouldAllowRequest(for endpoint: Endpoint) -> Bool {
+    public func shouldAllowRequest(for endpoint: any Endpoint) -> Bool {
         return queue.sync {
             cleanupOldRequests()
             return requestTimestamps.count < config.maxRequests
         }
     }
     
-    public func recordRequest(for endpoint: Endpoint) {
+    public func recordRequest(for endpoint: any Endpoint) {
         queue.async(flags: .barrier) {
             self.cleanupOldRequests()
             self.requestTimestamps.append(Date())
@@ -195,7 +180,7 @@ public final class EndpointSpecificRateLimiter: RateLimiter, @unchecked Sendable
         self.limiters = limiters
     }
     
-    public func shouldAllowRequest(for endpoint: Endpoint) -> Bool {
+    public func shouldAllowRequest(for endpoint: any Endpoint) -> Bool {
         let endpointKey = generateEndpointKey(endpoint)
         
         // Extract endpoint info before entering the sync closure
@@ -205,9 +190,13 @@ public final class EndpointSpecificRateLimiter: RateLimiter, @unchecked Sendable
         
         return queue.sync {
             if let limiter = limiters[endpointKey] {
-                // Create a simple endpoint-like object with extracted values
-                let simpleEndpoint = SimpleEndpoint(baseURL: baseURL, path: path, method: method)
-                return limiter.shouldAllowRequest(for: simpleEndpoint)
+                // Create HTTPEndpoint with extracted values for thread-safe access
+                let httpEndpoint = HTTPEndpoint(
+                    baseURL: baseURL,
+                    path: path,
+                    method: method
+                )
+                return limiter.shouldAllowRequest(for: httpEndpoint)
             } else {
                 // Use default limiter
                 return true // For now, allow by default
@@ -215,7 +204,7 @@ public final class EndpointSpecificRateLimiter: RateLimiter, @unchecked Sendable
         }
     }
     
-    public func recordRequest(for endpoint: Endpoint) {
+    public func recordRequest(for endpoint: any Endpoint) {
         let endpointKey = generateEndpointKey(endpoint)
         
         // Extract endpoint info before entering the async closure
@@ -225,9 +214,13 @@ public final class EndpointSpecificRateLimiter: RateLimiter, @unchecked Sendable
         
         queue.async(flags: .barrier) {
             if let limiter = self.limiters[endpointKey] {
-                // Create a simple endpoint-like object with extracted values
-                let simpleEndpoint = SimpleEndpoint(baseURL: baseURL, path: path, method: method)
-                limiter.recordRequest(for: simpleEndpoint)
+                // Create HTTPEndpoint with extracted values for thread-safe access
+                let httpEndpoint = HTTPEndpoint(
+                    baseURL: baseURL,
+                    path: path,
+                    method: method
+                )
+                limiter.recordRequest(for: httpEndpoint)
             }
         }
     }
@@ -240,7 +233,7 @@ public final class EndpointSpecificRateLimiter: RateLimiter, @unchecked Sendable
         }
     }
     
-    private func generateEndpointKey(_ endpoint: Endpoint) -> String {
+    private func generateEndpointKey(_ endpoint: any Endpoint) -> String {
         return "\(endpoint.baseURL.host ?? "")-\(endpoint.path)-\(endpoint.method.rawValue)"
     }
 }
@@ -252,11 +245,11 @@ public class RateLimitingPlugin: NetworkPlugin {
         self.rateLimiter = rateLimiter
     }
     
-    public func willSend(_ request: URLRequest, target: Endpoint) {
+    public func willSend(_ request: URLRequest, target: any Endpoint) {
         // Rate limiting is handled before the request is sent
     }
     
-    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint) {
+    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint) {
         // Record the request for rate limiting purposes
         rateLimiter.recordRequest(for: target)
     }

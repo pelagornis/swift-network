@@ -35,7 +35,7 @@ public protocol RequestBuilder {
  */
 public class NetworkRequestBuilder: RequestBuilder {
     /// The endpoint that defines the request structure
-    private let endpoint: Endpoint
+    private let endpoint: any Endpoint
     
     /// Additional headers to be merged with endpoint headers
     private var extraHeaders: [String: String] = [:]
@@ -49,7 +49,7 @@ public class NetworkRequestBuilder: RequestBuilder {
     /// Request modifiers to apply during building
     private var requestModifiers: [RequestModifier] = []
     
-    public init(endpoint: Endpoint) {
+    public init(endpoint: any Endpoint) {
         self.endpoint = endpoint
     }
     

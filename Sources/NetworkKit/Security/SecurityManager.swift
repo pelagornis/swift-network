@@ -300,11 +300,11 @@ public class CertificatePinningPlugin: NetworkPlugin {
         self.securityManager = securityManager
     }
     
-    public func willSend(_ request: URLRequest, target: Endpoint) {
+    public func willSend(_ request: URLRequest, target: any Endpoint) {
         // Certificate pinning validation happens in URLSession delegate
     }
     
-    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint) {
+    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint) {
         // Handle certificate validation results if needed
     }
 }

@@ -247,7 +247,7 @@ public final class NetworkProvider<E: Endpoint> {
                 
                 // Wait before retrying
                 if attempt < retryPolicy.maxAttempts() {
-                    try await Task.sleep(nanoseconds: UInt64(retryPolicy.delay(for: attempt) * 1_000_000_000))
+                    try await _Concurrency.Task.sleep(nanoseconds: UInt64(retryPolicy.delay(for: attempt) * 1_000_000_000))
                 }
             }
         } while attempt < (retryPolicy?.maxAttempts() ?? 1)

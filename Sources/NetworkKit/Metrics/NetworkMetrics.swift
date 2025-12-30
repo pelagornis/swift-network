@@ -150,11 +150,11 @@ public final class DefaultMetricsCollector: NetworkMetricsCollector, @unchecked 
     private var cacheMisses = 0
     
     public init() {
-        // 플랫폼별로 안전한 큐 생성
+        // Create a platform-safe queue
         #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
         self.queue = DispatchQueue(label: "com.network.metrics", attributes: .concurrent)
         #else
-        // Linux나 다른 플랫폼을 위한 fallback
+        // Fallback for Linux or other platforms
         self.queue = DispatchQueue(label: "com.network.metrics")
         #endif
     }
@@ -186,12 +186,12 @@ public final class DefaultMetricsCollector: NetworkMetricsCollector, @unchecked 
             let totalRequests = self.metrics.successCount + self.metrics.failureCount
             let newAverageResponseTime = (self.metrics.averageResponseTime * Double(totalRequests) + responseTime) / Double(totalRequests + 1)
             
-            // 플랫폼별로 안전한 바이트 계산
+            // Platform-safe byte calculation
             let bytesTransferred: Int64
             #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
             bytesTransferred = Int64(response.expectedContentLength)
             #else
-            // Linux나 다른 플랫폼에서는 기본값 사용
+            // Use default value for Linux or other platforms
             bytesTransferred = 0
             #endif
             let newTotalBytes = self.metrics.totalBytesTransferred + bytesTransferred

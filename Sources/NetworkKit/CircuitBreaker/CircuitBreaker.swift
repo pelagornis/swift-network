@@ -248,10 +248,10 @@ public final class DefaultCircuitBreaker: CircuitBreaker, @unchecked Sendable {
 }
 
 public class EndpointCircuitBreaker: CircuitBreaker {
-    private let endpoint: Endpoint
+    private let endpoint: any Endpoint
     private let circuitBreaker: CircuitBreaker
     
-    public init(endpoint: Endpoint, config: CircuitBreakerConfig = CircuitBreakerConfig()) {
+    public init(endpoint: any Endpoint, config: CircuitBreakerConfig = CircuitBreakerConfig()) {
         self.endpoint = endpoint
         self.circuitBreaker = DefaultCircuitBreaker(config: config)
     }
@@ -285,7 +285,7 @@ public final class CircuitBreakerPlugin: NetworkPlugin, @unchecked Sendable {
         self.circuitBreakers = circuitBreakers
     }
     
-    public func willSend(_ request: URLRequest, target: Endpoint) {
+    public func willSend(_ request: URLRequest, target: any Endpoint) {
         let key = generateKey(for: target)
         
         queue.sync {
@@ -298,7 +298,7 @@ public final class CircuitBreakerPlugin: NetworkPlugin, @unchecked Sendable {
         }
     }
     
-    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint) {
+    public func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint) {
         let key = generateKey(for: target)
         
         queue.async {
@@ -313,7 +313,7 @@ public final class CircuitBreakerPlugin: NetworkPlugin, @unchecked Sendable {
         }
     }
     
-    private func generateKey(for endpoint: Endpoint) -> String {
+    private func generateKey(for endpoint: any Endpoint) -> String {
         return "\(endpoint.baseURL.host ?? "")-\(endpoint.path)"
     }
 }
