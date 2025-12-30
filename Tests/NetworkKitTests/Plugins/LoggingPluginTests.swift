@@ -195,4 +195,18 @@ private struct MockEndpoint: Endpoint {
     let method: Http.Method = .get
     let task: Http.Task = .requestPlain
     let headers: [Http.Header] = []
+    let sampleData: Data? = nil
+    let timeout: TimeInterval? = nil
+    
+    var body: HTTPEndpoint {
+        HTTPEndpoint(
+            baseURL: baseURL,
+            path: path,
+            method: method,
+            task: task,
+            headers: headers,
+            sampleData: sampleData,
+            timeout: timeout
+        )
+    }
 }

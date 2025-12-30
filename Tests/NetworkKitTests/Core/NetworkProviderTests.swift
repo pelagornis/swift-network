@@ -162,6 +162,20 @@ private struct MockEndpoint: Endpoint {
     let method: Http.Method = .get
     let task: Http.Task = .requestPlain
     let headers: [Http.Header] = []
+    let sampleData: Data? = nil
+    let timeout: TimeInterval? = nil
+    
+    var body: HTTPEndpoint {
+        HTTPEndpoint(
+            baseURL: baseURL,
+            path: path,
+            method: method,
+            task: task,
+            headers: headers,
+            sampleData: sampleData,
+            timeout: timeout
+        )
+    }
 }
 
 private class MockSession: Session {
@@ -191,11 +205,11 @@ private class MockNetworkPlugin: NetworkPlugin {
     var didReceiveCallCount = 0
     var lastDidReceiveResult: Result<(Data, URLResponse), Error>?
     
-    func willSend(_ request: URLRequest, target: Endpoint) {
+    func willSend(_ request: URLRequest, target: any Endpoint) {
         willSendCallCount += 1
     }
     
-    func didReceive(_ result: Result<(Data, URLResponse), Error>, target: Endpoint) {
+    func didReceive(_ result: Result<(Data, URLResponse), Error>, target: any Endpoint) {
         didReceiveCallCount += 1
         lastDidReceiveResult = result
     }
