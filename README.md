@@ -50,14 +50,42 @@ The documentation for releases and `main` are available here:
 ```swift
 import NetworkKit
 
-// Define your endpoint
-struct UserEndpoint: Endpoint {
-    let baseURL = URL(string: "https://api.example.com")!
-    let path = "/users"
-    let method = Http.Method.get
-    let task = Http.Task.requestPlain
-    let headers = [Http.Header.accept("application/json")]
-    let timeout: TimeInterval? = 30
+// Define your endpoint using SwiftUI-style DSL
+enum UserEndpoint: Endpoint {
+    case getUsers
+    case getUser(id: Int)
+    case createUser(name: String, email: String)
+    
+    var body: HTTPEndpoint {
+        switch self {
+        case .getUsers:
+            return HTTP {
+                BaseURL("https://api.example.com")
+                Path("/users")
+                Method(.get)
+                HTTPTask(.requestPlain)
+                Headers([.accept("application/json")])
+                Timeout(30.0)
+            }
+        case .getUser(let id):
+            return HTTP {
+                BaseURL("https://api.example.com")
+                Path("/users/\(id)")
+                Method(.get)
+                HTTPTask(.requestPlain)
+                Headers([.accept("application/json")])
+            }
+        case .createUser(let name, let email):
+            let user = CreateUserRequest(name: name, email: email)
+            return HTTP {
+                BaseURL("https://api.example.com")
+                Path("/users")
+                Method(.post)
+                HTTPTask(.requestJSON(user))
+                Headers([.contentType("application/json")])
+            }
+        }
+    }
 }
 
 // Create a network provider
@@ -65,7 +93,7 @@ let provider = NetworkProvider<UserEndpoint>()
 
 // Make a request
 do {
-    let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+    let users: [User] = try await provider.request(.getUsers, as: [User].self)
     print("Users: \(users)")
 } catch {
     print("Error: \(error)")
@@ -95,7 +123,7 @@ let provider = NetworkProvider<UserEndpoint>(
 
 // Make a request with all enterprise features
 do {
-    let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+    let users: [User] = try await provider.request(.getUsers, as: [User].self)
     print("Users: \(users)")
 
     // Access metrics
@@ -112,25 +140,108 @@ do {
 
 ### Endpoints
 
-Endpoints define your API endpoints using the `Endpoint` protocol:
+Endpoints define your API endpoints using the `Endpoint` protocol with a SwiftUI-style DSL:
+
+#### Basic Endpoint Definition
 
 ```swift
-struct UserEndpoint: Endpoint {
-    let baseURL = URL(string: "https://api.example.com")!
-    let path = "/users"
-    let method = Http.Method.get
-    let task = Http.Task.requestPlain
-    let headers = [Http.Header.accept("application/json")]
-    let timeout: TimeInterval? = 30
+enum UserEndpoint: Endpoint {
+    case getUsers
+    case getUser(id: Int)
+    
+    var body: HTTPEndpoint {
+        switch self {
+        case .getUsers:
+            return HTTP {
+                BaseURL("https://api.example.com")
+                Path("/users")
+                Method(.get)
+                HTTPTask(.requestPlain)
+                Headers([.accept("application/json")])
+            }
+        case .getUser(let id):
+            return HTTP {
+                BaseURL("https://api.example.com")
+                Path("/users/\(id)")
+                Method(.get)
+                HTTPTask(.requestPlain)
+            }
+        }
+    }
 }
+```
 
-struct CreateUserEndpoint: Endpoint {
-    let baseURL = URL(string: "https://api.example.com")!
-    let path = "/users"
-    let method = Http.Method.post
-    let task = Http.Task.requestJSON(User(name: "John", email: "john@example.com"))
-    let headers = [Http.Header.contentType("application/json")]
-    let timeout: TimeInterval? = 30
+#### Reusable Base Endpoint
+
+For better reusability, you can define a base endpoint with common settings:
+
+```swift
+enum UserEndpoint: Endpoint {
+    case getUsers
+    case getUser(id: Int)
+    case createUser(name: String, email: String)
+    
+    // Base endpoint with common settings
+    private static var baseEndpoint: HTTPEndpoint {
+        HTTP {
+            BaseURL("https://api.example.com")
+            Headers([
+                .accept("application/json"),
+                .authorization("Bearer token")
+            ])
+            Timeout(30.0)
+        }
+    }
+    
+    var body: HTTPEndpoint {
+        switch self {
+        case .getUsers:
+            return HTTP(base: Self.baseEndpoint) {
+                Path("/users")
+                Method(.get)
+                HTTPTask(.requestPlain)
+            }
+        case .getUser(let id):
+            return HTTP(base: Self.baseEndpoint) {
+                Path("/users/\(id)")
+                Method(.get)
+                HTTPTask(.requestPlain)
+            }
+        case .createUser(let name, let email):
+            let user = CreateUserRequest(name: name, email: email)
+            return HTTP(base: Self.baseEndpoint) {
+                Path("/users")
+                Method(.post)
+                HTTPTask(.requestJSON(user))
+                Headers([.contentType("application/json")])
+            }
+        }
+    }
+}
+```
+
+#### Request with Parameters
+
+```swift
+enum SearchEndpoint: Endpoint {
+    case search(query: String, page: Int = 1, perPage: Int = 20)
+    
+    var body: HTTPEndpoint {
+        switch self {
+        case .search(let query, let page, let perPage):
+            let parameters = [
+                "q": query,
+                "page": "\(page)",
+                "per_page": "\(perPage)"
+            ]
+            return HTTP {
+                BaseURL("https://api.example.com")
+                Path("/search")
+                Method(.get)
+                HTTPTask(.requestParameters(parameters, encoding: .url))
+            }
+        }
+    }
 }
 ```
 
@@ -146,7 +257,7 @@ let modifiers: [RequestModifier] = [
 ]
 
 let users: [User] = try await provider.request(
-    UserEndpoint(),
+    .getUsers,
     as: [User].self,
     modifiers: modifiers
 )
@@ -207,7 +318,7 @@ if let httpResponse = response as? HTTPURLResponse {
 
 ```swift
 do {
-    let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+    let users: [User] = try await provider.request(.getUsers, as: [User].self)
     // Success - status code is 2xx
 } catch NetworkError.serverError(let statusCode, let data) {
     // Convert integer status code to enum
@@ -419,7 +530,7 @@ let provider = NetworkProvider<UserEndpoint>(
 
 do {
     // If offline, will return cached data or throw noConnection error
-    let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+    let users: [User] = try await provider.request(.getUsers, as: [User].self)
 } catch NetworkError.noConnection {
     print("No internet connection and no cached data available")
 }
@@ -617,7 +728,7 @@ class NetworkTests: XCTestCase {
         let provider = NetworkProvider<UserEndpoint>(session: mockSession)
 
         // Test request
-        let users: [User] = try await provider.request(UserEndpoint(), as: [User].self)
+        let users: [User] = try await provider.request(.getUsers, as: [User].self)
         XCTAssertNotNil(users)
     }
 }
@@ -627,7 +738,9 @@ class NetworkTests: XCTestCase {
 
 The library follows a protocol-oriented design with clear separation of concerns:
 
-- **`Endpoint`** - Defines API endpoints
+- **`Endpoint`** - Defines API endpoints using SwiftUI-style DSL with `body` property
+- **`HTTPEndpoint`** - Concrete endpoint implementation that stores request information
+- **`HTTPBuilder`** - Result builder for declarative endpoint definition
 - **`NetworkProvider`** - Main networking class with enterprise features
 - **`Session`** - Handles actual network requests
 - **`NetworkPlugin`** - Extensible plugin system
@@ -635,6 +748,18 @@ The library follows a protocol-oriented design with clear separation of concerns
 - **`ResponseHandler`** - Handles response processing
 - **`CacheManager`** - Caching functionality
 - **`NetworkLogger`** - Logging system
+
+### DSL Components
+
+The HTTP DSL provides the following components:
+
+- **`BaseURL`** - Sets the base URL for the API
+- **`Path`** - Defines the endpoint path
+- **`Method`** - Specifies the HTTP method (GET, POST, PUT, DELETE, etc.)
+- **`HTTPTask`** - Defines the request task (plain, JSON, parameters, multipart, etc.)
+- **`Headers`** - Sets HTTP headers
+- **`Timeout`** - Sets custom timeout for the request
+- **`HTTP(base:)`** - Inherits properties from a base endpoint for reusability
 
 ## Contributing
 
